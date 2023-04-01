@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
+#include <climits>
 using namespace std;
 #endif /* __PROGTEST__ */
 
@@ -24,7 +25,7 @@ class CPersonalAgenda {
     int size;
 
 public:
-    CPersonalAgenda(void) {
+    CPersonalAgenda() {
         size = 0;
     };
 
@@ -99,7 +100,7 @@ public:
         int i = findEmail(email);
         if (i == -1)
             return false;
-        int salary = Salary.at(i);
+        unsigned int salary = Salary.at(i);
         Name.erase(Name.begin() + i);
         Surname.erase(Surname.begin() + i);
         Email.erase(Email.begin() + i);
@@ -236,19 +237,22 @@ public:
 private:
     int findUN(const string &name,
                const string &surname) const {
-        string userName = surname + name;
         int hi = size - 1;
         int lo = 0;
         while (lo <= hi) {
             int mid = lo + (hi - lo) / 2;
-            string currUN = Surname.at(mid) + Name.at(mid);
-            if (currUN == userName)
+            if (Surname.at(mid) == surname && Name.at(mid) == name)
                 return mid;
 
-            if (userName.compare(currUN) > 0)
+            if (Surname.at(mid).compare(surname) < 0)
                 lo = mid + 1;
-            else
+            if (Surname.at(mid).compare(surname) > 0)
                 hi = mid - 1;
+            if(Surname.at(mid) == surname && Name.at(mid).compare(name) < 0)
+                lo = mid + 1;
+            if(Surname.at(mid) == surname && Name.at(mid).compare(name) > 0)
+                hi = mid - 1;
+
         }
         return -1;
     };
@@ -264,17 +268,19 @@ private:
 
     int sortedPos(const string &name, const string &surname){
 
-        string userName = surname + name;
         int hi = size - 1;
         int lo = 0;
         int mid = lo + (hi - lo) / 2;
         while (lo <= hi) {
             mid = lo + (hi - lo) / 2;
-            string currUN = Surname.at(mid) + Name.at(mid);
 
-            if (userName.compare(currUN) > 0)
+            if (Surname.at(mid).compare(surname) < 0)
                 lo = mid + 1;
-            else
+            if (Surname.at(mid).compare(surname) > 0)
+                hi = mid - 1;
+            if(Surname.at(mid) == surname && Name.at(mid).compare(name) < 0)
+                lo = mid + 1;
+            if(Surname.at(mid) == surname && Name.at(mid).compare(name) > 0)
                 hi = mid - 1;
         }
         if(mid == 0)
@@ -299,7 +305,7 @@ private:
 };
 
 #ifndef __PROGTEST__
-int main ( void )
+int main ( )
 {
   string outName, outSurname;
   int lo, hi;
@@ -316,6 +322,7 @@ int main ( void )
 
   cout << endl;
   assert ( b1 . add ( "Peter", "Dickens", "petera", 23000 ) );
+  b1.print();
   assert ( b1 . del ( "Peter", "Dickens") );
 
   cout << endl;
@@ -441,6 +448,28 @@ int main ( void )
     assert ( ! b2 . del ( "peter" ) );
     assert ( b2 . add ( "Peter", "Smith", "peter", 40000 ) );
     assert ( b2 . getSalary ( "peter" ) ==  40000 );
+    assert ( b2 . setSalary ( "peter", UINT_MAX ) );
+    assert ( b2 . getSalary ( "peter" ) ==  UINT_MAX );
+    assert ( b2 . setSalary ( "James", "Bond", UINT_MAX ) );
+    assert ( b2 . getSalary ( "James", "Bond" ) ==  UINT_MAX );
+
+    CPersonalAgenda b3;
+    string sus, amogus;
+    assert ( ! b3 . getSalary ("bruh"));
+    assert ( ! b3 . getSalary ("bruh", "brother"));
+    assert ( ! b3 . setSalary ("bruh", 15));
+    assert ( ! b3 . setSalary ("bruh", "brother", 15));
+
+    assert ( ! b3 . changeName ( "peter", "Peter", "Falcon" ) );
+    assert ( ! b3 . del ( "peter" ) );
+    assert ( ! b3 . del ( "peter", "beter" ) );
+    assert ( ! b3 . getFirst(amogus, sus));
+    assert ( ! b3 . getNext("bruh", "brother", amogus, sus));
+
+
+
+    cout << endl;
+    b1.print();
   return EXIT_SUCCESS;
 }
 #endif /* __PROGTEST__ */
