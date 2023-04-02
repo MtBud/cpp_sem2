@@ -50,7 +50,7 @@ public:
             return false;
 
         int pos = sortedPos(name, surname);
-        //cout << "sortedPos: " << pos << endl;
+        cout << "sortedPos: " << pos << endl;
         if(pos == -1) {
             pushBack(name, surname, email, salary);
             return true;
@@ -237,25 +237,23 @@ public:
 private:
     int findUN(const string &name,
                const string &surname) const {
+        string userName = surname + name;
         int hi = size - 1;
         int lo = 0;
         while (lo <= hi) {
             int mid = lo + (hi - lo) / 2;
-            if (Surname.at(mid) == surname && Name.at(mid) == name)
+            string currUN = Surname.at(mid) + Name.at(mid);
+            if (currUN == userName)
                 return mid;
 
-            if (Surname.at(mid).compare(surname) < 0)
+            if (userName.compare(currUN) > 0)
                 lo = mid + 1;
-            if (Surname.at(mid).compare(surname) > 0)
+            else
                 hi = mid - 1;
-            if(Surname.at(mid) == surname && Name.at(mid).compare(name) < 0)
-                lo = mid + 1;
-            if(Surname.at(mid) == surname && Name.at(mid).compare(name) > 0)
-                hi = mid - 1;
-
         }
         return -1;
     };
+
 
     int findEmail(const string &email) const {
         for (int i = 0; i < size; i++) {
@@ -267,28 +265,29 @@ private:
     };
 
     int sortedPos(const string &name, const string &surname){
-
+        string userName = surname + name;
         int hi = size - 1;
         int lo = 0;
         int mid = lo + (hi - lo) / 2;
         while (lo <= hi) {
             mid = lo + (hi - lo) / 2;
+            string currUN = Surname.at(mid) + Name.at(mid);
 
-            if (Surname.at(mid).compare(surname) < 0)
+            if(mid == 0 && userName.compare(currUN) < 0)
+                return mid;
+
+            if(mid == size - 1 && userName.compare(currUN) > 0)
+                return -1;
+
+            if (userName.compare(currUN) < 0 && userName.compare(Surname.at(mid-1) + Name.at(mid-1)) > 0)
+                return mid;
+
+            if (userName.compare(currUN) > 0)
                 lo = mid + 1;
-            if (Surname.at(mid).compare(surname) > 0)
-                hi = mid - 1;
-            if(Surname.at(mid) == surname && Name.at(mid).compare(name) < 0)
-                lo = mid + 1;
-            if(Surname.at(mid) == surname && Name.at(mid).compare(name) > 0)
+            else
                 hi = mid - 1;
         }
-        if(mid == 0)
-            return mid;
-        if(mid == size - 1)
-            return -1;
-        else
-            return mid;
+        return mid;
     };
 
     void pushBack(const string &name,
@@ -459,17 +458,40 @@ int main ( )
     assert ( ! b3 . getSalary ("bruh", "brother"));
     assert ( ! b3 . setSalary ("bruh", 15));
     assert ( ! b3 . setSalary ("bruh", "brother", 15));
-
     assert ( ! b3 . changeName ( "peter", "Peter", "Falcon" ) );
     assert ( ! b3 . del ( "peter" ) );
     assert ( ! b3 . del ( "peter", "beter" ) );
     assert ( ! b3 . getFirst(amogus, sus));
     assert ( ! b3 . getNext("bruh", "brother", amogus, sus));
 
-
+    CPersonalAgenda b4;
+    assert (  b4 . add ("AAA", "AAA", "aaa", 121));    b4.print();
+    assert (  b4 . add ("AAA", "BBB", "bbb", 122));    b4.print();
+    assert (  b4 . add ("BBB", "AAA", "ccc", 123));    b4.print();
+    assert (  b4 . add ("CCC", "AAA", "ddd", 124));    b4.print();
+    assert (  b4 . add ("DDD", "AAA", "eee", 125));    b4.print();
+    assert (  b4 . add ("EEE", "AAA", "fff", 126));    b4.print();
+    assert (  b4 . add ("AAA", "CCC", "ggg", 127));    b4.print();
+    assert (  b4 . add ("AAA", "DDD", "hhh", 128));    b4.print();
+    assert (  b4 . add ("AAA", "EEE", "iii", 129));    b4.print();
+    assert (  b4 . add ("AAA", "FFF", "jjj", 120));    b4.print();
+    assert ( !b4 . add ("AAA", "AAA", "kkk", 130));    b4.print();
+    assert ( !b4 . add ("AAA", "PPP", "jjj", 131));    b4.print();
 
     cout << endl;
-    b1.print();
+    CPersonalAgenda b5;
+    assert (  b5 . add ("BBB", "AAA", "ccc", 123));    b5.print();
+    assert (  b5 . add ("AAA", "AAA", "aaa", 121));    b5.print();
+    assert ( !b5 . add ("AAA", "AAA", "kkk", 130));    b5.print();
+    assert (  b5 . add ("AAA", "BBB", "bbb", 122));    b5.print();
+    assert (  b5 . add ("AAA", "DDD", "hhh", 128));    b5.print();
+    assert (  b5 . add ("CCC", "AAA", "ddd", 124));    b5.print();
+    assert (  b5 . add ("AAA", "CCC", "ggg", 127));    b5.print();
+    assert (  b5 . add ("DDD", "AAA", "eee", 125));    b5.print();
+    assert (  b5 . add ("EEE", "AAA", "fff", 126));    b5.print();
+    assert (  b5 . add ("AAA", "EEE", "iii", 129));    b5.print();
+    assert (  b5 . add ("AAA", "FFF", "jjj", 120));    b5.print();
+    assert ( !b5 . add ("AAA", "PPP", "jjj", 131));    b5.print();
   return EXIT_SUCCESS;
 }
 #endif /* __PROGTEST__ */
