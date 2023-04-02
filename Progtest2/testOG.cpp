@@ -17,10 +17,16 @@
 using namespace std;
 #endif /* __PROGTEST__ */
 
+struct EmailSort {
+    string email;
+    int index;
+};
+
 class CPersonalAgenda {
     vector<string> Name;
     vector<string> Surname;
     vector<string> Email;
+    vector<EmailSort> EmailId;
     vector<unsigned int> Salary;
     int size;
 
@@ -94,6 +100,8 @@ public:
     bool changeName(const string &email,
                     const string &newName,
                     const string &newSurname) {
+        cout << "changename" << endl;
+
         if (findUN(newName, newSurname) != -1)
             return false;
 
@@ -105,6 +113,7 @@ public:
         Surname.erase(Surname.begin() + i);
         Email.erase(Email.begin() + i);
         Salary.erase(Salary.begin() + i);
+        size --;
 
         int pos = sortedPos(newName, newSurname);
         if (pos == -1) {
@@ -116,6 +125,7 @@ public:
         Surname.insert(Surname.begin() + pos, newSurname);
         Email.insert(Email.begin() + pos, email);
         Salary.insert(Salary.begin() + pos, salary);
+        size++;
         return true;
     };
 
@@ -232,6 +242,7 @@ public:
       for(int i = 0; i < size; i++){
           cout << Name.at(i) << " " << Surname.at(i) << " " << Email.at(i) << " " << Salary.at(i) << endl;
       }
+      cout << "size: " << size << endl;
     };
 
 private:
@@ -241,16 +252,16 @@ private:
         int lo = 0;
         while (lo <= hi) {
             int mid = lo + (hi - lo) / 2;
-            if(Surname.at(mid) == surname && Name.at(mid) == name)
+            if (Surname.at(mid) == surname && Name.at(mid) == name)
                 return mid;
 
-            if(Surname.at(mid).compare(surname) < 0)
+            if (Surname.at(mid) < surname)
                 lo = mid + 1;
-            if(Surname.at(mid).compare(surname) > 0)
+            if (Surname.at(mid) > surname)
                 hi = mid - 1;
-            if(Surname.at(mid) == surname && Name.at(mid).compare(name) < 0)
+            if(Surname.at(mid) == surname && Name.at(mid) < name)
                 lo = mid + 1;
-            if(Surname.at(mid) == surname && Name.at(mid).compare(name) > 0)
+            if(Surname.at(mid) == surname && Name.at(mid) > name)
                 hi = mid - 1;
         }
         return -1;
@@ -259,56 +270,53 @@ private:
 
     int findEmail(const string &email) const {
         for (int i = 0; i < size; i++) {
-            if(Email.at(i) == email) {
+            if (Email.at(i) == email) {
                 return i;
             }
         }
         return -1;
     };
 
+    // sus switch binary search for finding the spot to put the name
     int sortedPos(const string &name, const string &surname){
-        string userName = surname + name;
         int hi = size - 1;
         int lo = 0;
         int mid = lo + (hi - lo) / 2;
         while (lo <= hi) {
             mid = lo + (hi - lo) / 2;
-            string currUN = Surname.at(mid) + Name.at(mid);
+            cout << "mid: " << mid << endl;
 
             // if the position is at the beginning
-            if(mid == 0 && Surname.at(mid).compare(surname) > 0)
+            if(mid == 0 && Surname.at(mid) > surname)
                 return mid;
-            if(mid == 0 && Surname.at(mid) == surname && Name.at(mid).compare(name) > 0)
+            if(mid == 0 && Surname.at(mid) == surname && Name.at(mid) > name)
                 return mid;
 
             // if the position is at the end
-            if(mid == size - 1 && Surname.at(mid).compare(surname) < 0)
+            if(mid == size - 1 && Surname.at(mid) < surname)
                 return -1;
-            if(mid == size - 1 && Surname.at(mid) == surname && Name.at(mid).compare(name) < 0)
+            if(mid == size - 1 && Surname.at(mid) == surname && Name.at(mid) < name)
                 return -1;
-
-            // if the position is right between the two
-            if(userName.compare(currUN) < 0 && userName.compare(Surname.at(mid-1) + Name.at(mid-1)) > 0)
-                return mid;
-            if(Surname.at(mid).compare(surname) > 0 && Surname.at(mid).compare(Surname.at(mid+1)) < 0)
-                return mid;
-            if(Surname.at(mid).compare(surname) > 0 && Surname.at(mid+1) == surname && Name.at(mid).compare(Name.at(mid+1)) < 0)
-                return mid;
-            if(Surname.at(mid) == surname && Name.at(mid).compare(Name.at(mid+1)) < 0)
-                return mid;
 
             // moving further in the binary search
-            if(Surname.at(mid).compare(surname) < 0)
+            if(Surname.at(mid) < surname)
                 lo = mid + 1;
-            if(Surname.at(mid).compare(surname) > 0)
+            if(Surname.at(mid) > surname)
                 hi = mid - 1;
-            if(Surname.at(mid) == surname && Name.at(mid).compare(name) < 0)
+            if(Surname.at(mid) == surname && Name.at(mid) < name)
                 lo = mid + 1;
-            if(Surname.at(mid) == surname && Name.at(mid).compare(name) > 0)
+            if(Surname.at(mid) == surname && Name.at(mid) > name)
                 hi = mid - 1;
         }
+        if(mid == size - 1)
+            return mid;
+        if(Surname.at(mid) < surname)
+            return mid + 1;
+        if(Surname.at(mid) == surname && Name.at(mid) < name)
+            return mid + 1;
         return mid;
     };
+
 
     void pushBack(const string &name,
                  const string &surname,
@@ -473,7 +481,7 @@ int main ( )
     assert ( b2 . getSalary ( "James", "Bond" ) ==  UINT_MAX );
 
     CPersonalAgenda b3;
-    string sus, amogus;
+    string sus = "deez", amogus = "nuts";
     assert ( ! b3 . getSalary ("bruh"));
     assert ( ! b3 . getSalary ("bruh", "brother"));
     assert ( ! b3 . setSalary ("bruh", 15));
@@ -486,6 +494,7 @@ int main ( )
 
     CPersonalAgenda b4;
     assert (  b4 . add ("AAA", "AAA", "aaa", 121));    b4.print();
+    assert (  b4 . getFirst(amogus, sus) && amogus == "AAA" && sus == "AAA");   b4.print();
     assert (  b4 . add ("AAA", "BBB", "bbb", 122));    b4.print();
     assert (  b4 . add ("BBB", "AAA", "ccc", 123));    b4.print();
     assert (  b4 . add ("CCC", "AAA", "ddd", 124));    b4.print();
@@ -493,31 +502,48 @@ int main ( )
     assert (  b4 . add ("EEE", "AAA", "fff", 126));    b4.print();
     assert (  b4 . add ("AAA", "CCC", "ggg", 127));    b4.print();
     assert (  b4 . add ("AAA", "DDD", "hhh", 128));    b4.print();
-    assert (  b4 . add ("AAA", "EEE", "iii", 129));    b4.print();
+    assert (  b4 . add ("BBB", "EEE", "iii", 129));    b4.print();
     assert (  b4 . add ("AAA", "FFF", "jjj", 120));    b4.print();
     assert ( !b4 . add ("AAA", "AAA", "kkk", 130));    b4.print();
     assert ( !b4 . add ("AAA", "PPP", "jjj", 131));    b4.print();
-    assert (  b4 . add ("", "PPP", "jjj", 131));    b4.print();
-    assert (  b4 . add ("AAA", "", "jjj", 131));    b4.print();
+    assert (  b4 . add ("", "PPP", "lll", 131));    b4.print();
+    assert (  b4 . add ("AAA", "", "mmm", 131));    b4.print();
+    assert ( !b4 . add ("AAA", "", "nnn", 131));    b4.print();
     assert (  b4 . add ("AAA", "OOO", "", 131));    b4.print();
+    assert (  b4 . add ("AAA", "QQQ", "ooo", -1));    b4.print();
+    assert (  b4 . getSalary("AAA", "AAA") == 121);
+    assert (  b4 . getSalary("AAA", "BBB") == 122);
+    assert (  b4 . getSalary("", "PPP") == 131);
+    assert (  b4 . getSalary("") == 131);
+    assert (  b4 .setSalary("", "PPP", 1420));
+    assert (  b4 .setSalary("", 1420));
+    assert (  b4 . getSalary("", "PPP") == 1420);
+    assert (  b4 . getSalary("") == 1420); cout << "salary" << endl; b4.print();
+    assert ( !b4 .changeName("hhh", "AAA", "DDD")); b4.print();
+    assert (  b4 .changeName("hhh", "BBB", "DDD")); b4.print();
+    assert (  b4 .changeName("hhh", "", "DDD")); b4.print();
+    assert (  b4 .changeName("hhh", "BBB", "")); b4.print();
+    assert (  b4 . add ("CCC", "EEE", "ppp", 200));    b4.print();
+    assert (  b4 . add ("AAA", "EEE", "sss", 200));    b4.print();
 
+    /*
+    assert (  b4 . add ("AAA", "SSS", "qqq", 220));    b4.print();
+    assert (  b4 . changeName ("hhh", "AAA", "TTT"));    b4.print();
+    assert (  b4 . changeName ("hhh", "", ""));    b4.print();
+    assert (  b4 . getSalary("AAA", "AAA") == 121);
+    assert (  b4 . getSalary("AAA", "SSS") == 220);
+    assert (  b4 . getSalary("", "PPP") == 1420);
+    assert (  b4 . getSalary("") == 1420);
+    assert (  b4 .setSalary("", "PPP", 220));
+    assert (  b4 .setSalary("", 220));
+    assert (  b4 . getSalary("", "PPP") == 220);
+    b4.print();
+    assert (  b4 . getFirst(amogus, sus) && amogus.empty() && sus.empty());
+    assert ( !b4 . getNext("AAA", "SSS", amogus, sus));
+    assert (  b4 . getNext("AAA", "BBB", amogus, sus) && amogus == "AAA" && sus == "CCC");
+    assert (  b4 . getNext("", "", amogus, sus) && amogus == "AAA" && sus.empty());
+    b4.print();*/
 
-
-
-    cout << endl;
-    CPersonalAgenda b5;
-    assert (  b5 . add ("BBB", "AAA", "ccc", 123));    b5.print();
-    assert (  b5 . add ("AAA", "AAA", "aaa", 121));    b5.print();
-    assert ( !b5 . add ("AAA", "AAA", "kkk", 130));    b5.print();
-    assert (  b5 . add ("AAA", "BBB", "bbb", 122));    b5.print();
-    assert (  b5 . add ("AAA", "DDD", "hhh", 128));    b5.print();
-    assert (  b5 . add ("CCC", "AAA", "ddd", 124));    b5.print();
-    assert (  b5 . add ("AAA", "CCC", "ggg", 127));    b5.print();
-    assert (  b5 . add ("DDD", "AAA", "eee", 125));    b5.print();
-    assert (  b5 . add ("EEE", "AAA", "fff", 126));    b5.print();
-    assert (  b5 . add ("AAA", "EEE", "iii", 129));    b5.print();
-    assert (  b5 . add ("AAA", "FFF", "jjj", 120));    b5.print();
-    assert ( !b5 . add ("AAA", "PPP", "jjj", 131));    b5.print();
   return EXIT_SUCCESS;
 }
 #endif /* __PROGTEST__ */
