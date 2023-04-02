@@ -17,17 +17,23 @@
 using namespace std;
 #endif /* __PROGTEST__ */
 
-struct EmailSort {
+struct userInfo {
+    string name;
+    string surname;
     string email;
-    int index;
+    unsigned int salary;
+    userInfo(const string& newName, const string& newSurname, const string& newEmail, const unsigned int& newSalary){
+        name = newName;
+        surname = newSurname;
+        email = newEmail;
+        salary = newSalary;
+    }
 };
 
+
 class CPersonalAgenda {
-    vector<string> Name;
-    vector<string> Surname;
-    vector<string> Email;
-    vector<EmailSort> EmailId;
-    vector<unsigned int> Salary;
+    vector<userInfo> NameSort;
+    vector<userInfo> EmailSort;
     int size;
 
 public:
@@ -35,18 +41,17 @@ public:
         size = 0;
     };
 
-    /*~CPersonalAgenda ( void ){
-
-    };*/
-
-
     bool add(const string &name,
              const string &surname,
              const string &email,
              unsigned int salary) {
         cout << "add" <<endl;
-        if(Name.empty()){
-            pushBack(name, surname, email, salary);
+        if(NameSort.empty()){
+            pushBack(name, surname, email, salary, NameSort);
+            pushBack(name, surname, email, salary, EmailSort);
+            size ++;
+            cout << "empty" << endl;
+
             return true;
         }
         if (findUN(name, surname) != -1)
@@ -56,16 +61,20 @@ public:
             return false;
 
         int pos = sortedPos(name, surname);
-        cout << "sortedPos: " << pos << endl;
-        if(pos == -1) {
-            pushBack(name, surname, email, salary);
-            return true;
-        }
+        int posmail = sortedPosMail(email);
+        cout << "pos, posmail: " << pos << " " << posmail << endl;
 
-        Name.insert(Name.begin() + pos, name);
-        Surname.insert(Surname.begin() + pos, surname);
-        Email.insert(Email.begin() + pos, email);
-        Salary.insert(Salary.begin() + pos, salary);
+        userInfo entry(name, surname, email, salary);
+        if(pos == -1)
+            pushBack(name, surname, email, salary, NameSort);
+        else
+            NameSort.insert(NameSort.begin() + pos, entry);
+
+        if(posmail == -1)
+            pushBack(name, surname, email, salary, EmailSort);
+        else
+            EmailSort.insert(EmailSort.begin() + posmail, entry);
+
         size ++;
         return true;
     };
@@ -73,26 +82,29 @@ public:
     bool del(const string &name,
              const string &surname) {
         cout << "del" <<endl;
-        int position = findUN(name, surname);
-        if (position == -1)
+        int pos = findUN(name, surname);
+        if (pos == -1)
             return false;
-        Name.erase(Name.begin() + position);
-        Surname.erase(Surname.begin() + position);
-        Email.erase(Email.begin() + position);
-        Salary.erase(Salary.begin() + position);
+        string email = NameSort.at(pos).email;
+        int posmail = findEmail(email);
+
+        NameSort.erase(NameSort.begin() + pos);
+        EmailSort.erase(EmailSort.begin() + posmail);
         size --;
         return true;
     };
 
     bool del(const string &email) {
-        //cout << "del" <<endl;
-        int i = findEmail(email);
-        if (i == -1)
+        cout << "del" <<endl;
+        int posmail = findEmail(email);
+        if (posmail == -1)
             return false;
-        Name.erase(Name.begin() + i);
-        Surname.erase(Surname.begin() + i);
-        Email.erase(Email.begin() + i);
-        Salary.erase(Salary.begin() + i);
+        string name = EmailSort.at(posmail).name;
+        string surname = EmailSort.at(posmail).surname;
+        int pos = findUN(name, surname);
+
+        NameSort.erase(NameSort.begin() + pos);
+        EmailSort.erase(EmailSort.begin() + posmail);
         size --;
         return true;
     };
@@ -105,26 +117,30 @@ public:
         if (findUN(newName, newSurname) != -1)
             return false;
 
-        int i = findEmail(email);
-        if (i == -1)
+        int posmail = findEmail(email);
+        if (posmail == -1)
             return false;
-        unsigned int salary = Salary.at(i);
-        Name.erase(Name.begin() + i);
-        Surname.erase(Surname.begin() + i);
-        Email.erase(Email.begin() + i);
-        Salary.erase(Salary.begin() + i);
+        string name = EmailSort.at(posmail).name;
+        string surname = EmailSort.at(posmail).surname;
+        unsigned int salary = EmailSort.at(posmail).salary;
+        EmailSort.at(posmail).name = newName;
+        EmailSort.at(posmail).surname = newSurname;
+
+        int pos = findUN(name, surname);
+        cout << "pos: " << pos << endl;
+
+        NameSort.erase(NameSort.begin() + pos);
         size --;
 
-        int pos = sortedPos(newName, newSurname);
+        pos = sortedPos(newName, newSurname);
         if (pos == -1) {
-            pushBack(newName, newSurname, email, salary);
+            pushBack(newName, newSurname, email, salary, NameSort);
+            size++;
             return true;
         }
 
-        Name.insert(Name.begin() + pos, newName);
-        Surname.insert(Surname.begin() + pos, newSurname);
-        Email.insert(Email.begin() + pos, email);
-        Salary.insert(Salary.begin() + pos, salary);
+        userInfo add(newName, newSurname, email, salary);
+        NameSort.insert(NameSort.begin() + pos, add);
         size++;
         return true;
     };
@@ -132,48 +148,76 @@ public:
     bool changeEmail(const string &name,
                      const string &surname,
                      const string &newEmail) {
+        cout << "changeemail" << endl;
+
         if (findEmail(newEmail) != -1)
             return false;
 
-        int i = findUN(name, surname);
-        if(i == -1)
+        int pos = findUN(name, surname);
+        if (pos == -1)
             return false;
-        Email.at(i) = newEmail;
+        string email = NameSort.at(pos).email;
+        unsigned int salary = NameSort.at(pos).salary;
+        int posmail = findEmail(email);
+        NameSort.at(pos).email = newEmail;
+
+        EmailSort.erase(EmailSort.begin() + posmail);
+        size --;
+
+        posmail = sortedPosMail(newEmail);
+        if (posmail == -1) {
+            pushBack(name, surname, newEmail, salary, EmailSort);
+            size++;
+            cout << "change size: " << size << endl;
+            return true;
+        }
+
+        userInfo add(name, surname, newEmail, salary);
+        EmailSort.insert(EmailSort.begin() + posmail, add);
+        size++;
         return true;
     };
 
     bool setSalary(const string &name,
                    const string &surname,
                    unsigned int salary) {
-        int i = findUN(name, surname);
-        if(i == -1)
+        int pos = findUN(name, surname);
+        if(pos == -1)
             return false;
-        Salary.at(i) = salary;
+        string email = NameSort.at(pos).email;
+        int posmail = findEmail(email);
+        NameSort.at(pos).salary = salary;
+        EmailSort.at(posmail).salary = salary;
         return true;
     };
 
     bool setSalary(const string &email,
                    unsigned int salary){
-        int i = findEmail(email);
-        if(i == -1)
+        int posmail = findEmail(email);
+        if(posmail == -1)
             return false;
-        Salary.at(i) = salary;
+        string name = EmailSort.at(posmail).name;
+        string surname = EmailSort.at(posmail).surname;
+        int pos = findUN(name, surname);
+        NameSort.at(pos).salary = salary;
+        EmailSort.at(posmail).salary = salary;
         return true;
     };
 
     unsigned int getSalary(const string &name,
                            const string &surname) const{
-        int i = findUN(name, surname);
-        if(i == -1)
+        int pos = findUN(name, surname);
+        if(pos == -1)
             return 0;
-        return Salary.at(i);
+        return NameSort.at(pos).salary;
     };
 
     unsigned int getSalary(const string &email) const{
-        int i = findEmail(email);
-        if(i == -1)
-            return 0;
-        return Salary.at(i);
+        int posmail = findEmail(email);
+        if(posmail == -1){
+            cout<< "email not found" << endl;
+            return 0;}
+        return EmailSort.at(posmail).salary;
     };
 
     bool getRank(const string &name,
@@ -183,13 +227,13 @@ public:
         int pos = findUN(name, surname);
         if(pos == -1)
             return false;
-        unsigned int salary = Salary.at(pos);
+        unsigned int salary = NameSort.at(pos).salary;
         int less = 0;
         int equal = 0;
         for(int i = 0; i < size; i++){
-            if(Salary.at(i) < salary)
+            if(NameSort.at(i).salary < salary)
                 less ++;
-            if(Salary.at(i) == salary)
+            if(NameSort.at(i).salary == salary)
                 equal ++;
         }
         rankMin = less;
@@ -200,16 +244,16 @@ public:
     bool getRank(const string &email,
                  int &rankMin,
                  int &rankMax) const{
-        int pos = findEmail(email);
-        if(pos == -1)
+        int posmail = findEmail(email);
+        if(posmail == -1)
             return false;
-        unsigned int salary = Salary.at(pos);
+        unsigned int salary = EmailSort.at(posmail).salary;
         int less = 0;
         int equal = 0;
         for(int i = 0; i < size; i++){
-            if(Salary.at(i) < salary)
+            if(EmailSort.at(i).salary < salary)
                 less ++;
-            if(Salary.at(i) == salary)
+            if(EmailSort.at(i).salary == salary)
                 equal ++;
         }
         rankMin = less;
@@ -219,10 +263,10 @@ public:
 
     bool getFirst(string &outName,
                   string &outSurname) const{
-        if(Name.empty())
+        if(NameSort.empty())
             return false;
-        outName = Name.at(0);
-        outSurname = Surname.at(0);
+        outName = NameSort.at(0).name;
+        outSurname = NameSort.at(0).surname;
         return true;
     };
 
@@ -233,16 +277,25 @@ public:
         int pos = findUN(name, surname);
         if(pos == -1 || pos == size - 1)
             return false;
-        outName = Name.at(pos+1);
-        outSurname = Surname.at(pos+1);
+        outName = NameSort.at(pos+1).name;
+        outSurname = NameSort.at(pos+1).surname;
         return true;
     };
 
-    void print() const{
+    void printNameSort() const{
       for(int i = 0; i < size; i++){
-          cout << Name.at(i) << " " << Surname.at(i) << " " << Email.at(i) << " " << Salary.at(i) << endl;
+          cout << NameSort.at(i).name << " " << NameSort.at(i).surname << " " <<
+                    NameSort.at(i).email << " " << NameSort.at(i).salary << endl;
       }
       cout << "size: " << size << endl;
+    };
+
+    void printEmailSort() const{
+        for(int i = 0; i < size; i++){
+            cout << EmailSort.at(i).name << " " << EmailSort.at(i).surname << " " <<
+                 EmailSort.at(i).email << " " << EmailSort.at(i).salary << endl;
+        }
+        cout << "size: " << size << endl;
     };
 
 private:
@@ -252,16 +305,16 @@ private:
         int lo = 0;
         while (lo <= hi) {
             int mid = lo + (hi - lo) / 2;
-            if (Surname.at(mid) == surname && Name.at(mid) == name)
+            if (NameSort.at(mid).surname == surname && NameSort.at(mid).name == name)
                 return mid;
 
-            if (Surname.at(mid) < surname)
+            if (NameSort.at(mid).surname < surname)
                 lo = mid + 1;
-            if (Surname.at(mid) > surname)
+            if (NameSort.at(mid).surname > surname)
                 hi = mid - 1;
-            if(Surname.at(mid) == surname && Name.at(mid) < name)
+            if(NameSort.at(mid).surname == surname && NameSort.at(mid).name < name)
                 lo = mid + 1;
-            if(Surname.at(mid) == surname && Name.at(mid) > name)
+            if(NameSort.at(mid).surname == surname && NameSort.at(mid).name > name)
                 hi = mid - 1;
         }
         return -1;
@@ -269,11 +322,20 @@ private:
 
 
     int findEmail(const string &email) const {
-        for (int i = 0; i < size; i++) {
-            if (Email.at(i) == email) {
-                return i;
-            }
+        int hi = size - 1;
+        int lo = 0;
+        int mid = lo + (hi - lo) / 2;
+        while (lo <= hi) {
+            mid = lo + (hi - lo) / 2;
+            if (EmailSort.at(mid).email == email)
+                return mid;
+
+            if (EmailSort.at(mid).email < email)
+                lo = mid + 1;
+            if (EmailSort.at(mid).email > email)
+                hi = mid - 1;
         }
+        cout << "mid: " << mid << endl;
         return -1;
     };
 
@@ -287,46 +349,76 @@ private:
             cout << "mid: " << mid << endl;
 
             // if the position is at the beginning
-            if(mid == 0 && Surname.at(mid) > surname)
+            if(mid == 0 && NameSort.at(mid).surname > surname)
                 return mid;
-            if(mid == 0 && Surname.at(mid) == surname && Name.at(mid) > name)
+            if(mid == 0 && NameSort.at(mid).surname == surname && NameSort.at(mid).name > name)
                 return mid;
 
             // if the position is at the end
-            if(mid == size - 1 && Surname.at(mid) < surname)
+            if(mid == size - 1 && NameSort.at(mid).surname < surname)
                 return -1;
-            if(mid == size - 1 && Surname.at(mid) == surname && Name.at(mid) < name)
+            if(mid == size - 1 && NameSort.at(mid).surname == surname && NameSort.at(mid).name < name)
                 return -1;
 
             // moving further in the binary search
-            if(Surname.at(mid) < surname)
+            if(NameSort.at(mid).surname < surname)
                 lo = mid + 1;
-            if(Surname.at(mid) > surname)
+            if(NameSort.at(mid).surname > surname)
                 hi = mid - 1;
-            if(Surname.at(mid) == surname && Name.at(mid) < name)
+            if(NameSort.at(mid).surname == surname && NameSort.at(mid).name < name)
                 lo = mid + 1;
-            if(Surname.at(mid) == surname && Name.at(mid) > name)
+            if(NameSort.at(mid).surname == surname && NameSort.at(mid).name > name)
                 hi = mid - 1;
         }
         if(mid == size - 1)
             return mid;
-        if(Surname.at(mid) < surname)
+        if(NameSort.at(mid).surname < surname)
             return mid + 1;
-        if(Surname.at(mid) == surname && Name.at(mid) < name)
+        if(NameSort.at(mid).surname == surname && NameSort.at(mid).name < name)
             return mid + 1;
         return mid;
     };
 
+    int sortedPosMail(const string &email){
+        int hi = size - 1;
+        int lo = 0;
+        int mid = lo + (hi - lo) / 2;
+        while (lo <= hi) {
+            mid = lo + (hi - lo) / 2;
+            cout << "mid: " << mid << endl;
 
-    void pushBack(const string &name,
+            // if the position is at the beginning
+            if(mid == 0 && EmailSort.at(mid).email > email)
+                return mid;
+
+            // if the position is at the end
+            if(mid == size - 1 && EmailSort.at(mid).email < email)
+                return -1;
+
+            // moving further in the binary search
+            if(EmailSort.at(mid).email < email)
+                lo = mid + 1;
+            if(EmailSort.at(mid).email > email)
+                hi = mid - 1;
+
+        }
+
+        if(mid == size - 1)
+            return mid;
+        if(EmailSort.at(mid).email < email){
+            return mid + 1;
+        }
+        return mid;
+    };
+
+    static void pushBack(const string &name,
                  const string &surname,
                  const string &email,
-                 unsigned int salary){
-        Name.push_back(name);
-        Surname.push_back(surname);
-        Email.push_back(email);
-        Salary.push_back(salary);
-        size ++;
+                 unsigned int salary,
+                 vector<userInfo>& Database){
+        userInfo add(name, surname, email, salary);
+        cout << "pushback" << endl;
+        Database.push_back(add);
     };
 
 };
@@ -339,24 +431,24 @@ int main ( )
 
   CPersonalAgenda b1;
   assert ( b1 . add ( "John", "Smith", "john", 30000 ) );
-  b1.print();
+  b1.printNameSort();
   assert ( b1 . add ( "John", "Miller", "johnm", 35000 ) );
-  b1.print();
+  b1.printNameSort();
   assert ( b1 . add ( "Peter", "Smith", "peter", 23000 ) );
-  b1.print();
+  b1.printNameSort();
   assert ( b1 . add ( "Peter", "Smith", "petera", 23000 ) == false);
   assert ( b1 . add ( "Peter", "Dickens", "peter", 23000 ) == false);
 
   cout << endl;
   assert ( b1 . add ( "Peter", "Dickens", "petera", 23000 ) );
-  b1.print();
+  b1.printNameSort();
   assert ( b1 . del ( "Peter", "Dickens") );
 
   cout << endl;
   assert ( b1 . add ( "Peter", "Dickens", "petera", 23000 ) );
   assert ( b1 . del ( "petera") );
 
-  b1.print();
+  b1.printNameSort();
 
     assert ( b1 . getFirst ( outName, outSurname )
              && outName == "John"
@@ -379,7 +471,7 @@ int main ( )
              && hi == 1 );
 
     cout << endl;
-    b1.print();
+    b1.printNameSort();
     cout << "lo: " << lo << "  hi: " << hi << endl;
     assert ( b1 . getRank ( "peter", lo, hi )
              && lo == 0
@@ -406,7 +498,7 @@ int main ( )
     assert ( b1 . getSalary ( "peter" ) ==  23000 );
     assert ( b1 . getSalary ( "James", "Bond" ) ==  23000 );
     assert ( b1 . getSalary ( "Peter", "Smith" ) ==  0 );
-    b1.print();
+    b1.printNameSort();
     assert ( b1 . getFirst ( outName, outSurname )
              && outName == "James"
              && outSurname == "Bond" );
@@ -493,24 +585,24 @@ int main ( )
     assert ( ! b3 . getNext("bruh", "brother", amogus, sus));
 
     CPersonalAgenda b4;
-    assert (  b4 . add ("AAA", "AAA", "aaa", 121));    b4.print();
-    assert (  b4 . getFirst(amogus, sus) && amogus == "AAA" && sus == "AAA");   b4.print();
-    assert (  b4 . add ("AAA", "BBB", "bbb", 122));    b4.print();
-    assert (  b4 . add ("BBB", "AAA", "ccc", 123));    b4.print();
-    assert (  b4 . add ("CCC", "AAA", "ddd", 124));    b4.print();
-    assert (  b4 . add ("DDD", "AAA", "eee", 125));    b4.print();
-    assert (  b4 . add ("EEE", "AAA", "fff", 126));    b4.print();
-    assert (  b4 . add ("AAA", "CCC", "ggg", 127));    b4.print();
-    assert (  b4 . add ("AAA", "DDD", "hhh", 128));    b4.print();
-    assert (  b4 . add ("BBB", "EEE", "iii", 129));    b4.print();
-    assert (  b4 . add ("AAA", "FFF", "jjj", 120));    b4.print();
-    assert ( !b4 . add ("AAA", "AAA", "kkk", 130));    b4.print();
-    assert ( !b4 . add ("AAA", "PPP", "jjj", 131));    b4.print();
-    assert (  b4 . add ("", "PPP", "lll", 131));    b4.print();
-    assert (  b4 . add ("AAA", "", "mmm", 131));    b4.print();
-    assert ( !b4 . add ("AAA", "", "nnn", 131));    b4.print();
-    assert (  b4 . add ("AAA", "OOO", "", 131));    b4.print();
-    assert (  b4 . add ("AAA", "QQQ", "ooo", -1));    b4.print();
+    assert (  b4 . add ("AAA", "AAA", "aaa", 121));    b4.printNameSort();
+    assert (  b4 . getFirst(amogus, sus) && amogus == "AAA" && sus == "AAA");   b4.printNameSort();
+    assert (  b4 . add ("AAA", "BBB", "bbb", 122));    b4.printNameSort();
+    assert (  b4 . add ("BBB", "AAA", "ccc", 123));    b4.printNameSort();
+    assert (  b4 . add ("CCC", "AAA", "ddd", 124));    b4.printNameSort();
+    assert (  b4 . add ("DDD", "AAA", "eee", 125));    b4.printNameSort();
+    assert (  b4 . add ("EEE", "AAA", "fff", 126));    b4.printNameSort();
+    assert (  b4 . add ("AAA", "CCC", "ggg", 127));    b4.printNameSort();
+    assert (  b4 . add ("AAA", "DDD", "hhh", 128));    b4.printNameSort();
+    assert (  b4 . add ("BBB", "EEE", "iii", 129));    b4.printNameSort();
+    assert (  b4 . add ("AAA", "FFF", "jjj", 120));    b4.printNameSort();
+    assert ( !b4 . add ("AAA", "AAA", "kkk", 130));    b4.printNameSort();
+    assert ( !b4 . add ("AAA", "PPP", "jjj", 131));    b4.printNameSort();
+    assert (  b4 . add ("", "PPP", "lll", 131));    b4.printNameSort();
+    assert (  b4 . add ("AAA", "", "mmm", 131));    b4.printNameSort();
+    assert ( !b4 . add ("AAA", "", "nnn", 131));    b4.printNameSort();
+    assert (  b4 . add ("AAA", "OOO", "", 131));    b4.printNameSort();
+    assert (  b4 . add ("AAA", "QQQ", "ooo", -1));    b4.printNameSort();
     assert (  b4 . getSalary("AAA", "AAA") == 121);
     assert (  b4 . getSalary("AAA", "BBB") == 122);
     assert (  b4 . getSalary("", "PPP") == 131);
@@ -518,31 +610,43 @@ int main ( )
     assert (  b4 .setSalary("", "PPP", 1420));
     assert (  b4 .setSalary("", 1420));
     assert (  b4 . getSalary("", "PPP") == 1420);
-    assert (  b4 . getSalary("") == 1420); cout << "salary" << endl; b4.print();
-    assert ( !b4 .changeName("hhh", "AAA", "DDD")); b4.print();
-    assert (  b4 .changeName("hhh", "BBB", "DDD")); b4.print();
-    assert (  b4 .changeName("hhh", "", "DDD")); b4.print();
-    assert (  b4 .changeName("hhh", "BBB", "")); b4.print();
-    assert (  b4 . add ("CCC", "EEE", "ppp", 200));    b4.print();
-    assert (  b4 . add ("AAA", "EEE", "sss", 200));    b4.print();
+    assert (  b4 . getSalary("") == 1420); cout << "salary" << endl; b4.printNameSort();
+    assert ( !b4 .changeName("hhh", "AAA", "DDD")); b4.printNameSort();
+    assert (  b4 .changeName("hhh", "BBB", "DDD")); b4.printNameSort();
+    assert (  b4 .changeName("hhh", "", "DDD")); b4.printNameSort();
+    assert (  b4 .changeName("hhh", "BBB", "")); b4.printNameSort();
+    assert ( !b4 .changeEmail("DDD", "AAA", "ddd")); b4.printEmailSort();
+    assert (  b4 .changeEmail("DDD", "AAA", "zzz")); b4.printEmailSort();
+    assert (  b4 .changeEmail("AAA", "OOO", "yyy")); b4.printEmailSort();
+    assert (  b4 .changeEmail("DDD", "AAA", "")); b4.printEmailSort();
+    assert (  b4 . add ("CCC", "EEE", "ppp", 200));    b4.printNameSort();
+    assert (  b4 . add ("AAA", "EEE", "sss", 200));    b4.printNameSort();
+    b4.printEmailSort();
+    assert (  b4 . getSalary("DDD", "AAA") == 125);
+    assert (  b4 . getSalary("") == 125);
+    assert (  b4 . getSalary("BBB", "") == 128);
+    assert (  b4 . getSalary("hhh") == 128); b4.printNameSort();
+    assert (  b4 . getFirst(amogus, sus) && amogus == "AAA" && sus.empty());
+    assert (  b4 . getNext("BBB", "", amogus, sus) && amogus == "AAA" && sus == "AAA");
+    assert (  b4 . getNext("DDD", "AAA", amogus, sus) && amogus == "EEE" && sus == "AAA");
 
-    /*
-    assert (  b4 . add ("AAA", "SSS", "qqq", 220));    b4.print();
-    assert (  b4 . changeName ("hhh", "AAA", "TTT"));    b4.print();
-    assert (  b4 . changeName ("hhh", "", ""));    b4.print();
+
+    assert (  b4 . add ("AAA", "SSS", "qqq", 220));    b4.printNameSort();
+    assert (  b4 . changeName ("hhh", "AAA", "TTT"));    b4.printNameSort();
+    assert (  b4 . changeName ("hhh", "", ""));    b4.printNameSort();
     assert (  b4 . getSalary("AAA", "AAA") == 121);
     assert (  b4 . getSalary("AAA", "SSS") == 220);
-    assert (  b4 . getSalary("", "PPP") == 1420);
-    assert (  b4 . getSalary("") == 1420);
+    assert (  b4 . getSalary("", "PPP") == 1420); b4.printEmailSort();
+    assert (  b4 . getSalary("") == 125);
     assert (  b4 .setSalary("", "PPP", 220));
     assert (  b4 .setSalary("", 220));
     assert (  b4 . getSalary("", "PPP") == 220);
-    b4.print();
+    b4.printNameSort();
     assert (  b4 . getFirst(amogus, sus) && amogus.empty() && sus.empty());
     assert ( !b4 . getNext("AAA", "SSS", amogus, sus));
     assert (  b4 . getNext("AAA", "BBB", amogus, sus) && amogus == "AAA" && sus == "CCC");
     assert (  b4 . getNext("", "", amogus, sus) && amogus == "AAA" && sus.empty());
-    b4.print();*/
+    b4.printNameSort();
 
   return EXIT_SUCCESS;
 }
