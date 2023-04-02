@@ -237,18 +237,20 @@ public:
 private:
     int findUN(const string &name,
                const string &surname) const {
-        string userName = surname + name;
         int hi = size - 1;
         int lo = 0;
         while (lo <= hi) {
             int mid = lo + (hi - lo) / 2;
-            string currUN = Surname.at(mid) + Name.at(mid);
-            if (currUN == userName)
+            if(Surname.at(mid) == surname && Name.at(mid) == name)
                 return mid;
 
-            if (userName.compare(currUN) > 0)
+            if(Surname.at(mid).compare(surname) < 0)
                 lo = mid + 1;
-            else
+            if(Surname.at(mid).compare(surname) > 0)
+                hi = mid - 1;
+            if(Surname.at(mid) == surname && Name.at(mid).compare(name) < 0)
+                lo = mid + 1;
+            if(Surname.at(mid) == surname && Name.at(mid).compare(name) > 0)
                 hi = mid - 1;
         }
         return -1;
@@ -257,7 +259,7 @@ private:
 
     int findEmail(const string &email) const {
         for (int i = 0; i < size; i++) {
-            if (Email.at(i) == email) {
+            if(Email.at(i) == email) {
                 return i;
             }
         }
@@ -273,18 +275,36 @@ private:
             mid = lo + (hi - lo) / 2;
             string currUN = Surname.at(mid) + Name.at(mid);
 
-            if(mid == 0 && userName.compare(currUN) < 0)
+            // if the position is at the beginning
+            if(mid == 0 && Surname.at(mid).compare(surname) > 0)
+                return mid;
+            if(mid == 0 && Surname.at(mid) == surname && Name.at(mid).compare(name) > 0)
                 return mid;
 
-            if(mid == size - 1 && userName.compare(currUN) > 0)
+            // if the position is at the end
+            if(mid == size - 1 && Surname.at(mid).compare(surname) < 0)
+                return -1;
+            if(mid == size - 1 && Surname.at(mid) == surname && Name.at(mid).compare(name) < 0)
                 return -1;
 
-            if (userName.compare(currUN) < 0 && userName.compare(Surname.at(mid-1) + Name.at(mid-1)) > 0)
+            // if the position is right between the two
+            if(userName.compare(currUN) < 0 && userName.compare(Surname.at(mid-1) + Name.at(mid-1)) > 0)
+                return mid;
+            if(Surname.at(mid).compare(surname) > 0 && Surname.at(mid).compare(Surname.at(mid+1)) < 0)
+                return mid;
+            if(Surname.at(mid).compare(surname) > 0 && Surname.at(mid+1) == surname && Name.at(mid).compare(Name.at(mid+1)) < 0)
+                return mid;
+            if(Surname.at(mid) == surname && Name.at(mid).compare(Name.at(mid+1)) < 0)
                 return mid;
 
-            if (userName.compare(currUN) > 0)
+            // moving further in the binary search
+            if(Surname.at(mid).compare(surname) < 0)
                 lo = mid + 1;
-            else
+            if(Surname.at(mid).compare(surname) > 0)
+                hi = mid - 1;
+            if(Surname.at(mid) == surname && Name.at(mid).compare(name) < 0)
+                lo = mid + 1;
+            if(Surname.at(mid) == surname && Name.at(mid).compare(name) > 0)
                 hi = mid - 1;
         }
         return mid;
@@ -477,6 +497,12 @@ int main ( )
     assert (  b4 . add ("AAA", "FFF", "jjj", 120));    b4.print();
     assert ( !b4 . add ("AAA", "AAA", "kkk", 130));    b4.print();
     assert ( !b4 . add ("AAA", "PPP", "jjj", 131));    b4.print();
+    assert (  b4 . add ("", "PPP", "jjj", 131));    b4.print();
+    assert (  b4 . add ("AAA", "", "jjj", 131));    b4.print();
+    assert (  b4 . add ("AAA", "OOO", "", 131));    b4.print();
+
+
+
 
     cout << endl;
     CPersonalAgenda b5;
