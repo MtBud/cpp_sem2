@@ -35,14 +35,14 @@ class CRange{
         hi = newHi;
     };
 
-    bool operator == (CRange& rightRange) const{
+    bool operator == (const CRange& rightRange) const{
         if(lo == rightRange.Lo() && hi == rightRange.Hi())
             return true;
         else
             return false;
     }
 
-    bool operator != (CRange& rightRange) const{
+    bool operator != (const CRange& rightRange) const{
         if(lo != rightRange.Lo() || hi != rightRange.Hi())
             return true;
         else
@@ -70,6 +70,19 @@ class CRangeList{
   public:
     // constructor
     // includes long long / range
+    bool includes(const long long& num) const{
+        for (auto i: List)
+            if (num >= i.Lo() && num <= i.Hi())
+                return true;
+        return false;
+    };
+
+    bool includes(const CRange& range) const{
+        for (auto i: List)
+            if (range.Lo() >= i.Lo() && range.Hi() <= i.Hi())
+                return true;
+        return false;
+    }
 
     // += range / range list
     void operator += (const CRange& newInterval){
@@ -170,7 +183,7 @@ class CRangeList{
     }
 
     // operator ==
-    bool operator == ( CRangeList& rightList) const{
+    bool operator == ( const CRangeList& rightList) const{
         for(unsigned int i = 0; i < List.size(); i++){
             if(List.at(i) == rightList.List.at(i))
                 continue;
@@ -180,7 +193,7 @@ class CRangeList{
         return true;
     }
     // operator !=
-    bool operator != ( CRangeList& rightList) const{
+    bool operator != ( const CRangeList& rightList) const{
         for(unsigned int i = 0; i < List.size(); i++){
             if(List.at(i) != rightList.List.at(i))
                 return true;
@@ -234,7 +247,7 @@ CRangeList operator - (const CRange& leftInterval, const CRange& rightInterval){
 };
 
 
-ostream& operator << (ostream& out, const CRangeList& outList){
+ostream& operator << (ostream& out, const CRangeList& outList) {
     out << "{";
     if(outList.List.empty())
         return out << "}";
@@ -322,7 +335,6 @@ int                main                                   ()
   assert ( toString ( b ) == "{<-500..-401>,<-399..-300>,<-30..9>,15,<21..29>,<41..899>,<2501..3000>}" );
   assert ( !( a == b ) );
   assert ( a != b );
-  /*
   assert ( b . includes ( 15 ) );
   assert ( b . includes ( 2900 ) );
   assert ( b . includes ( CRange ( 15, 15 ) ) );
@@ -341,7 +353,7 @@ int                main                                   ()
   assert ( toString ( b ) == "{<0..100>,<160..169>,<171..180>,<251..300>}" );
   b -= CRange ( 10, 90 ) - CRange ( 20, 30 ) - CRange ( 40, 50 ) - CRange ( 60, 90 ) + CRange ( 70, 80 );
   assert ( toString ( b ) == "{<0..9>,<20..30>,<40..50>,<60..69>,<81..100>,<160..169>,<171..180>,<251..300>}" );
-  */
+
 #ifdef EXTENDED_SYNTAX
   CRangeList x { { 5, 20 }, { 150, 200 }, { -9, 12 }, { 48, 93 } };
   assert ( toString ( x ) == "{<-9..20>,<48..93>,<150..200>}" );
