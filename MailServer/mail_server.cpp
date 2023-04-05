@@ -11,25 +11,57 @@
 using namespace std;
 #endif /* __PROGTEST__ */
 
+/*email adresses
+ * v úloze mohou být libovolné řetězce, při jejich porovnávání rozlišujeme malá a velká písmena (case sensitive)
+ * - v tomto se úloha liší od reálného světa, kde e-mailové adresy mají předepsaný formální tvar a kde se malá
+ * a velká písmena zpravidla nerozlišují.*/
+
 class CMail
 {
   public:
+    /*konstruktor:
+      vytvoří instanci e-mailu se složkami from/to/body vyplněnými podle parametrů. Můžete předpokládat,
+      že e-mailové adresy jsou relativně krátké (desítky až stovky znaků) a že tělo zprávy může být
+      relativně dlouhé (i několik megabyte)*/
                              CMail                         ( const char      * from,
                                                              const char      * to,
                                                              const char      * body );
+    /*operator ==
+      porovná obsah dvou instancí CMail, metoda vrací true, pokud jsou instance
+      identické (shodují se všechny složky from, to i obsah e-mailu).*/
     bool                     operator ==                   ( const CMail     & x ) const;
+    /*operator <<
+     *     zobrazí informace o mailu do zadaného streamu. Formát je zřejmý z ukázky.*/
     friend ostream         & operator <<                   ( ostream         & os,
                                                              const CMail     & m );
   private:
     // todo
 };
 
-class CMailIterator 
+class CMailIterator
+        /*copy constructor, operator =, destructor
+         *     podle způsobu implementace možná nebude postačovat automaticky generovaná varianta.
+         *     Testovací prostředí iterátory nikde explicitně nekopíruje, ale ke kopírování dochází
+         *     v okamžiku předávání návratové hodnoty metodami inbox a outbox.*/
 {
   public:
+    /*operator bool
+     *     operátor zjistí, zda iterátor odkazuje na platný e-mail (vrací true), nebo zda dosáhl za poslední e-mail
+     *     v seznamu (tedy e-mail už nelze číst, vrátí false),*/
     explicit                 operator bool                 ( void ) const;
+    /*operator !
+     *     funguje stejně jako předešlý operátor, pouze vrací opačnou návratovou hodnotu */
     bool                     operator !                    ( void ) const;
+    /*operator *
+     * unární operátor * zpřístupní e-mail na aktuální pozici. Návratovou hodnotou je instance CMail
+     * (případně konstantní reference na CMail). Nemusíte řešit situaci, že by se zpřístupnil e-mail za koncem
+     * seznamu - testovací prostředí vždy nejprve kontroluje platnost iterátoru a teprve pak případně
+     * zpřístupní odkazovaný e-mail.*/
     const CMail            & operator *                    ( void ) const;
+    /*prefixový operátor ++ zajistí přesun iterátoru na další e-mail v seznamu. E-maily jsou iterátorem procházené
+     * v pořadí, ve kterém byly odeslané/přijaté. Opakovaným voláním tohoto iterátoru se lze přesunout od prvního
+     * e-mailu přijatého/odeslaného zadanou e-mailovou adresou až k poslednímu
+     * (pak musí operátor přetypování na bool vracet false).*/
     CMailIterator          & operator ++                   ( void );
   private:
     // todo
@@ -39,12 +71,30 @@ class CMailIterator
 class CMailServer 
 {
   public:
+    /*implicit constructor
+     *     vytvoří prázdnou instanci */
                              CMailServer                   ( void );
+    /*copy constructor / operator =
+     *     vytvoří identické kopie instance podle standardních pravidel,*/
                              CMailServer                   ( const CMailServer & src );
     CMailServer            & operator =                    ( const CMailServer & src );
+    /*destructor
+     *     uvolní prostředky alokované instancí,*/
                              ~CMailServer                  ( void );
+    /*sendMail
+     * zašle e-mail předaný v parametrech, efektivně jej zařadí do odpovídajících schránek odesílatele a příjemce.
+     * E-mail je vždy zařazen na konec existujícího seznamu. Příjemce ani odesílatele není potřeba zakládat, schránka
+     * se automaticky vytvoří po zpracování prvního e-mailu, který obsahuje danou e-mailovou adresu,*/
     void                     sendMail                      ( const CMail     & m );
+    /*outbox
+     * zpřístupní poštu odeslanou ze zadané adresy. Návratovou hodnotou je instance CMailIterator, která umožní
+     * procházet emaily odeslané z adresy email. Pokud je zadaná neznámá e-mailová adresa, je výsledkem iterátor
+     * pro prázdný seznam e-mailů. Vrácený iterátor musí zachycovat stav mailové schránky v okamžiku, kdy byl vytvořen.
+     * Tedy pokud během používání iterátoru dojde ke změně obsahu procházené schránky, tato změna se do hodnot vracených
+     * iterátorem nijak nepromítne. Toto chování je demonstrované v ukázkovém běhu např. pro iterátor i5.*/
     CMailIterator            outbox                        ( const char      * email ) const;
+    /*inbox
+     *     zpřístupní poštu přijatou na zadanou adresu. Jinak metoda pracuje stejně jako metoda outbox.*/
     CMailIterator            inbox                         ( const char      * email ) const;
   
   private:
