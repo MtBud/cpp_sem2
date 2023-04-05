@@ -1,13 +1,12 @@
 #ifndef __PROGTEST__
+#include <algorithm>
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <algorithm>
 #include <stdexcept>
-#include <memory>
 #include <climits>
 using namespace std;
 #endif /* __PROGTEST__ */
@@ -63,17 +62,13 @@ class CRangeList{
     // constructor
     // includes long long / range
     bool includes(const long long& num) const{
-        for (auto i: List)
-            if (num >= i.Lo() && num <= i.Hi())
-                return true;
-        return false;
+        return any_of(List.begin(), List.end(), [num](const CRange& i)
+        {return num >= i.Lo() && num <= i.Hi();});
     };
 
     bool includes(const CRange& range) const{
-        for (auto i: List)
-            if (range.Lo() >= i.Lo() && range.Hi() <= i.Hi())
-                return true;
-        return false;
+        return any_of(List.begin(), List.end(), [range](const CRange& i)
+        {return range.Lo() >= i.Lo() && range.Hi() <= i.Hi();});
     }
 
     // += range / range list
@@ -176,6 +171,8 @@ class CRangeList{
 
     // operator ==
     bool operator == ( const CRangeList& rightList) const{
+        if((List.empty() && !(rightList.List.empty())) || (!(List.empty()) && rightList.List.empty()))
+            return false;
         for(unsigned int i = 0; i < List.size(); i++){
             if(List.at(i) == rightList.List.at(i))
                 continue;
@@ -186,6 +183,8 @@ class CRangeList{
     }
     // operator !=
     bool operator != ( const CRangeList& rightList) const{
+        if((List.empty() && !(rightList.List.empty())) || (!(List.empty()) && rightList.List.empty()))
+            return true;
         for(unsigned int i = 0; i < List.size(); i++){
             if(List.at(i) != rightList.List.at(i))
                 return true;
@@ -199,18 +198,9 @@ class CRangeList{
 
 private:
     void mergeRight(const unsigned int& newpos){
-        if(List.at(newpos).Hi() == LLONG_MIN && List.at(newpos + 1).Lo() == LLONG_MIN){
-            long long newHi = List.at(newpos + 1).Hi();
-            if(List.at(newpos).Hi() > List.at(newpos + 1).Hi())
-                newHi = List.at(newpos).Hi();
+        while(List.at(newpos).Lo()  == List.at(newpos + 1).Lo() ||
+              List.at(newpos).Hi()  >= List.at(newpos + 1).Lo() - 1){
 
-            CRange replace(List.at(newpos).Lo(), newHi);
-            List.erase(List.begin() + newpos + 1);
-            List.erase(List.begin() + newpos);
-            addToList(newpos, replace);
-            return;
-        }
-        while(List.at(newpos).Hi()  >= List.at(newpos + 1).Lo() - 1){
             long long newHi = List.at(newpos + 1).Hi();
             if(List.at(newpos).Hi() > List.at(newpos + 1).Hi())
                 newHi = List.at(newpos).Hi();
@@ -366,6 +356,8 @@ int                main                                   ()
   c -= CRange ( LLONG_MIN, -2000) + CRange(2000, LLONG_MAX);
   assert( toString ( c ) == "{<-1999..-100>,<100..1999>}");
   c = CRange ( LLONG_MIN, -100) + CRange( 100, LLONG_MAX);
+  assert ( c .includes( CRange(152, LLONG_MAX)));
+  assert ( c .includes( CRange(LLONG_MIN, -150)));
   assert ( c .includes( LLONG_MAX) );
   assert ( c .includes( LLONG_MIN) );
   CRangeList d = c;
@@ -396,8 +388,29 @@ int                main                                   ()
   c = CRange(LLONG_MIN, LLONG_MIN) + CRange(LLONG_MIN, LLONG_MIN);
   cout << c << endl;
   assert (toString( c ) == "{-9223372036854775808}");
+  c = CRange(LLONG_MAX, LLONG_MAX) + CRange(LLONG_MAX, LLONG_MAX);
+  cout << c << endl;
+  assert (toString( c ) == "{9223372036854775807}");
+  c = CRange(LLONG_MIN, 150) + CRange(LLONG_MIN, 1000) + CRange(LLONG_MIN, -30);
+  cout << c << endl;
+  assert (toString( c ) == "{<-9223372036854775808..1000>}");
 
-
+  CRangeList e,f;
+  assert ( !e .includes( CRange(LLONG_MIN, -150)));
+  assert ( !e .includes( LLONG_MAX) );
+  e += f;
+  e -= f;
+  assert ( e == f);
+  assert ( !( e != f));
+  f += CRange(1,1);
+  f += e;
+  f -= e;
+  cout << "e: " << e << endl;
+  cout << "f: " << f << endl;
+  assert ( e != f);
+  assert ( f != e);
+  assert ( !(e == f));
+  assert ( !(f == e));
 
 
 
