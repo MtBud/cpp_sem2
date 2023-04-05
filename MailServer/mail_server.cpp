@@ -16,24 +16,80 @@ using namespace std;
  * - v tomto se úloha liší od reálného světa, kde e-mailové adresy mají předepsaný formální tvar a kde se malá
  * a velká písmena zpravidla nerozlišují.*/
 
+class CustomStr{
+    char*  m_String;
+    size_t m_length;
+    size_t m_capacity;
+public:
+    CustomStr():m_String(nullptr), m_length(0), m_capacity(0){};
+
+    explicit CustomStr(const char* str){
+        m_String = new char [strlen(str) + 1];
+        strcpy(m_String, str);
+        m_length = strlen(m_String);
+        m_capacity = m_length + 1;
+    };
+
+    ~CustomStr(){
+        delete [] m_String;
+    };
+
+    CustomStr(const CustomStr& src ): m_String(new char [src.m_length + 1]),
+                                      m_length(src.m_length),
+                                      m_capacity(src.m_capacity){
+        memcpy( m_String, src . m_String, m_length + 1 );
+    }
+
+    explicit operator const char* () const{
+        return m_String;
+    }
+
+    bool operator == (const CustomStr& rhs){
+        if(strcmp(m_String, (const char *) rhs) == 0)
+            return true;
+        else
+            return false;
+    };
+
+    void append(const char* str)const{
+        strcat(m_String, str);
+    }
+
+    size_t len()const{
+        return m_length;
+    }
+private:
+
+};
+
 class CMail
 {
+    CustomStr m_from;
+    CustomStr m_to;
+    CustomStr m_body;
   public:
     /*konstruktor:
       vytvoří instanci e-mailu se složkami from/to/body vyplněnými podle parametrů. Můžete předpokládat,
       že e-mailové adresy jsou relativně krátké (desítky až stovky znaků) a že tělo zprávy může být
       relativně dlouhé (i několik megabyte)*/
-                             CMail                         ( const char      * from,
-                                                             const char      * to,
-                                                             const char      * body );
+    CMail( const char * from, const char * to, const char * body ):
+        m_from(from), m_to(to), m_body(body){};
     /*operator ==
       porovná obsah dvou instancí CMail, metoda vrací true, pokud jsou instance
       identické (shodují se všechny složky from, to i obsah e-mailu).*/
-    bool                     operator ==                   ( const CMail     & x ) const;
+    bool operator == ( const CMail& rhs ) const{
+        if(!(m_from == rhs.from())){
+
+        }
+    };
     /*operator <<
      *     zobrazí informace o mailu do zadaného streamu. Formát je zřejmý z ukázky.*/
     friend ostream         & operator <<                   ( ostream         & os,
                                                              const CMail     & m );
+
+    CustomStr from () const{
+      return m_from;
+    };
   private:
     // todo
 };
