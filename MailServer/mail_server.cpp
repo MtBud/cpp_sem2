@@ -50,6 +50,8 @@ public:
 private:
 };
 
+//------------------------------------------------------------------------------------------------------------
+
 class CMail
 {
     CustomStr m_from;
@@ -76,15 +78,21 @@ class CMail
     };
     /*operator <<
      *     zobrazí informace o mailu do zadaného streamu. Formát je zřejmý z ukázky.*/
-    friend ostream         & operator <<                   ( ostream         & os,
-                                                             const CMail     & m );
+    friend ostream& operator << ( ostream& out, const CMail& outMail );
 
-    CustomStr from () const{
-      return m_from;
-    };
   private:
     // todo
 };
+
+// format: "From: alice, To: john, Body: deadline confirmation"
+ostream& operator << ( ostream& out, const CMail& outMail ){
+    out << "From: " << outMail.m_from
+        << ", To: " << outMail.m_to
+        << ", Body: " << outMail.m_body;
+    return out;
+}
+
+//-----------------------------------------------------------------------------------------------------------------
 
 class CMailIterator
         /*copy constructor, operator =, destructor
@@ -96,39 +104,40 @@ class CMailIterator
     /*operator bool
      *     operátor zjistí, zda iterátor odkazuje na platný e-mail (vrací true), nebo zda dosáhl za poslední e-mail
      *     v seznamu (tedy e-mail už nelze číst, vrátí false),*/
-    explicit                 operator bool                 ( void ) const;
+    explicit operator bool ( void ) const;
     /*operator !
      *     funguje stejně jako předešlý operátor, pouze vrací opačnou návratovou hodnotu */
-    bool                     operator !                    ( void ) const;
+    bool operator ! ( void ) const;
     /*operator *
      * unární operátor * zpřístupní e-mail na aktuální pozici. Návratovou hodnotou je instance CMail
      * (případně konstantní reference na CMail). Nemusíte řešit situaci, že by se zpřístupnil e-mail za koncem
      * seznamu - testovací prostředí vždy nejprve kontroluje platnost iterátoru a teprve pak případně
      * zpřístupní odkazovaný e-mail.*/
-    const CMail            & operator *                    ( void ) const;
+    const CMail& operator * ( void ) const;
     /*prefixový operátor ++ zajistí přesun iterátoru na další e-mail v seznamu. E-maily jsou iterátorem procházené
      * v pořadí, ve kterém byly odeslané/přijaté. Opakovaným voláním tohoto iterátoru se lze přesunout od prvního
      * e-mailu přijatého/odeslaného zadanou e-mailovou adresou až k poslednímu
      * (pak musí operátor přetypování na bool vracet false).*/
-    CMailIterator          & operator ++                   ( void );
+    CMailIterator& operator ++ ( void );
   private:
     // todo
 };
 
+//------------------------------------------------------------------------------------------------------------------
 
 class CMailServer 
 {
   public:
     /*implicit constructor
      *     vytvoří prázdnou instanci */
-                             CMailServer                   ( void );
+    CMailServer();
     /*copy constructor / operator =
      *     vytvoří identické kopie instance podle standardních pravidel,*/
-                             CMailServer                   ( const CMailServer & src );
-    CMailServer            & operator =                    ( const CMailServer & src );
+    CMailServer ( const CMailServer & src );
+    CMailServer& operator =                    ( const CMailServer & src );
     /*destructor
      *     uvolní prostředky alokované instancí,*/
-                             ~CMailServer                  ( void );
+    ~CMailServer ( void );
     /*sendMail
      * zašle e-mail předaný v parametrech, efektivně jej zařadí do odpovídajících schránek odesílatele a příjemce.
      * E-mail je vždy zařazen na konec existujícího seznamu. Příjemce ani odesílatele není potřeba zakládat, schránka
@@ -149,17 +158,17 @@ class CMailServer
     // todo
 };
 
-#ifndef __PROGTEST__
-/*
-bool                         matchOutput                   ( const CMail     & m,
-                                                             const char      * str )
-{
-  ostringstream oss;
-  oss << m;
-  return oss . str () == str;
-}*/
+//--------------------------------------------------------------------------------------------------------------
 
-int main ( void )
+#ifndef __PROGTEST__
+
+bool matchOutput ( const CMail& m, const char* str ){
+    ostringstream oss;
+    oss << m;
+    return oss . str () == str;
+}
+
+int main ()
 {
   //char from[100], to[100], body[1024];
 
