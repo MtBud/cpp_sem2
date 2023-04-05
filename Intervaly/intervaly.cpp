@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <memory>
+#include <climits>
 using namespace std;
 #endif /* __PROGTEST__ */
 
@@ -19,7 +20,7 @@ class CRange{
     long long lo;
     long long hi;
   public:
-    CRange(long long const &newLo, long long const &newHi){
+    CRange( const long long &newLo, const long long &newHi){
         if(newLo > newHi)
             throw logic_error("low is higher than high");
         lo = newLo;
@@ -49,7 +50,7 @@ class CRange{
     }
 
     void print() const{
-      cout << "lo: " << lo << "hi: " << hi << endl;
+      cout << "lo: " << lo << " hi: " << hi << endl;
     };
   private:
     // todo
@@ -198,7 +199,7 @@ class CRangeList{
 
 private:
     void mergeRight(const unsigned int& newpos){
-        while(List.at(newpos).Hi() +1 >= List.at(newpos + 1).Lo()){
+        if(List.at(newpos).Hi() == LLONG_MIN && List.at(newpos + 1).Lo() == LLONG_MIN){
             long long newHi = List.at(newpos + 1).Hi();
             if(List.at(newpos).Hi() > List.at(newpos + 1).Hi())
                 newHi = List.at(newpos).Hi();
@@ -206,7 +207,18 @@ private:
             CRange replace(List.at(newpos).Lo(), newHi);
             List.erase(List.begin() + newpos + 1);
             List.erase(List.begin() + newpos);
-            List.insert(List.begin() + newpos, replace);
+            addToList(newpos, replace);
+            return;
+        }
+        while(List.at(newpos).Hi()  >= List.at(newpos + 1).Lo() - 1){
+            long long newHi = List.at(newpos + 1).Hi();
+            if(List.at(newpos).Hi() > List.at(newpos + 1).Hi())
+                newHi = List.at(newpos).Hi();
+
+            CRange replace(List.at(newpos).Lo(), newHi);
+            List.erase(List.begin() + newpos + 1);
+            List.erase(List.begin() + newpos);
+            addToList(newpos, replace);
             if(newpos == List.size()-1){
                 break;
             }
@@ -235,7 +247,7 @@ CRangeList operator - (const CRange& leftInterval, const CRange& rightInterval){
     delList = leftInterval;
     delList -= rightInterval;
     return delList;
-};
+}
 
 
 ostream& operator << (ostream& out, const CRangeList& outList) {
@@ -253,7 +265,7 @@ ostream& operator << (ostream& out, const CRangeList& outList) {
             out << "<" << i.Lo() << ".." << i.Hi() << ">";
     }
     return out << "}";
-};
+}
 
 
 #ifndef __PROGTEST__
@@ -344,6 +356,55 @@ int                main                                   ()
   assert ( toString ( b ) == "{<0..100>,<160..169>,<171..180>,<251..300>}" );
   b -= CRange ( 10, 90 ) - CRange ( 20, 30 ) - CRange ( 40, 50 ) - CRange ( 60, 90 ) + CRange ( 70, 80 );
   assert ( toString ( b ) == "{<0..9>,<20..30>,<40..50>,<60..69>,<81..100>,<160..169>,<171..180>,<251..300>}" );
+
+  CRangeList c;
+  c += CRange ( LLONG_MIN, -100) + CRange( 100, LLONG_MAX);
+  cout << c << endl;
+  assert( toString ( c ) == "{<-9223372036854775808..-100>,<100..9223372036854775807>}" );
+  c = CRange ( LLONG_MIN, -100) + CRange( 100, LLONG_MAX);
+  assert( toString ( c ) == "{<-9223372036854775808..-100>,<100..9223372036854775807>}" );
+  c -= CRange ( LLONG_MIN, -2000) + CRange(2000, LLONG_MAX);
+  assert( toString ( c ) == "{<-1999..-100>,<100..1999>}");
+  c = CRange ( LLONG_MIN, -100) + CRange( 100, LLONG_MAX);
+  assert ( c .includes( LLONG_MAX) );
+  assert ( c .includes( LLONG_MIN) );
+  CRangeList d = c;
+  assert ( c == d);
+  assert ( !( c != d) );
+  c = CRange ( 101, 105 ) + CRange ( 120, 150 ) + CRange ( 160, 180 ) + CRange ( 190, 210 );
+  c -= CRange(LLONG_MIN,LLONG_MAX);
+  assert (toString( c ) == "{}");
+  cout << c << endl;
+  c = CRange ( LLONG_MIN, LLONG_MAX);
+  c -= CRange(LLONG_MIN,LLONG_MAX);
+  assert (toString( c ) == "{}");
+  c = CRange ( LLONG_MIN, LLONG_MAX);
+  c += CRange (LLONG_MAX, LLONG_MAX);
+  cout << c << endl;
+  assert (toString( c ) == "{<-9223372036854775808..9223372036854775807>}");
+  c += CRange (LLONG_MIN, LLONG_MIN);
+  assert (toString( c ) == "{<-9223372036854775808..9223372036854775807>}");
+  c -= CRange(LLONG_MIN, LLONG_MIN);
+  assert (toString( c ) == "{<-9223372036854775807..9223372036854775807>}");
+  c -= CRange(LLONG_MAX, LLONG_MAX);
+  assert (toString( c ) == "{<-9223372036854775807..9223372036854775806>}");
+  c = CRange(LLONG_MIN, LLONG_MIN);
+  assert (toString( c ) == "{-9223372036854775808}");
+  c = CRange(5, 5) + CRange(5, 5);
+  cout << c << endl;
+  assert (toString( c ) == "{5}");
+  c = CRange(LLONG_MIN, LLONG_MIN) + CRange(LLONG_MIN, LLONG_MIN);
+  cout << c << endl;
+  assert (toString( c ) == "{-9223372036854775808}");
+
+
+
+
+
+
+
+
+
 
 #ifdef EXTENDED_SYNTAX
   CRangeList x { { 5, 20 }, { 150, 200 }, { -9, 12 }, { 48, 93 } };
