@@ -40,20 +40,31 @@ public:
         memcpy( m_String, src . m_String, m_length + 1 );
     }
 
+    CustomStr& operator = ( const CustomStr& rhs){
+        if ( &rhs != this )
+        {
+            delete [] m_String;
+            m_capacity   = rhs.m_capacity;
+            m_length   = rhs.m_length;
+            m_String  = new char [m_capacity];
+            memcpy  ( m_String, rhs.m_String, m_length + 1 );
+        }
+        return *this;
+    };
+
     operator const char* () const{
         return m_String;
     }
 
-    size_t len()const{
-        return m_length;
+    size_t size()const{
+        return m_capacity;
     }
 private:
 };
 
 //------------------------------------------------------------------------------------------------------------
 
-class CMail
-{
+class CMail{
     CustomStr m_from;
     CustomStr m_to;
     CustomStr m_body;
@@ -62,8 +73,11 @@ class CMail
       vytvoří instanci e-mailu se složkami from/to/body vyplněnými podle parametrů. Můžete předpokládat,
       že e-mailové adresy jsou relativně krátké (desítky až stovky znaků) a že tělo zprávy může být
       relativně dlouhé (i několik megabyte)*/
+    CMail()= default;
+
     CMail( const char * from, const char * to, const char * body ):
-        m_from(from), m_to(to), m_body(body){};
+           m_from(from), m_to(to), m_body(body){
+    };
     /*operator ==
       porovná obsah dvou instancí CMail, metoda vrací true, pokud jsou instance
       identické (shodují se všechny složky from, to i obsah e-mailu).*/
@@ -76,6 +90,7 @@ class CMail
             return false;
         return true;
     };
+
     /*operator <<
      *     zobrazí informace o mailu do zadaného streamu. Formát je zřejmý z ukázky.*/
     friend ostream& operator << ( ostream& out, const CMail& outMail );
@@ -125,37 +140,63 @@ class CMailIterator
 
 //------------------------------------------------------------------------------------------------------------------
 
-class CMailServer 
-{
+class CMailServer{
+    CMail* m_MailList;
+    size_t m_length;
+    size_t m_capacity;
   public:
     /*implicit constructor
      *     vytvoří prázdnou instanci */
-    CMailServer();
+    CMailServer():m_length(0),m_capacity(2){
+        m_MailList = new CMail[2];
+    };
+
     /*copy constructor / operator =
      *     vytvoří identické kopie instance podle standardních pravidel,*/
-    CMailServer ( const CMailServer & src );
-    CMailServer& operator =                    ( const CMailServer & src );
+    CMailServer ( const CMailServer& src ):m_length(src.m_length), m_capacity(src.m_capacity){
+    };
+    CMailServer& operator = ( const CMailServer& src );
     /*destructor
      *     uvolní prostředky alokované instancí,*/
-    ~CMailServer ( void );
+    ~CMailServer (){
+        delete [] m_MailList;
+    };
     /*sendMail
      * zašle e-mail předaný v parametrech, efektivně jej zařadí do odpovídajících schránek odesílatele a příjemce.
      * E-mail je vždy zařazen na konec existujícího seznamu. Příjemce ani odesílatele není potřeba zakládat, schránka
      * se automaticky vytvoří po zpracování prvního e-mailu, který obsahuje danou e-mailovou adresu,*/
-    void                     sendMail                      ( const CMail     & m );
+    void sendMail ( const CMail& m ){
+        if(m_length == m_capacity)
+            realocate();
+        m_MailList[m_length] = m;
+        m_length ++;
+    };
     /*outbox
      * zpřístupní poštu odeslanou ze zadané adresy. Návratovou hodnotou je instance CMailIterator, která umožní
      * procházet emaily odeslané z adresy email. Pokud je zadaná neznámá e-mailová adresa, je výsledkem iterátor
      * pro prázdný seznam e-mailů. Vrácený iterátor musí zachycovat stav mailové schránky v okamžiku, kdy byl vytvořen.
      * Tedy pokud během používání iterátoru dojde ke změně obsahu procházené schránky, tato změna se do hodnot vracených
      * iterátorem nijak nepromítne. Toto chování je demonstrované v ukázkovém běhu např. pro iterátor i5.*/
-    CMailIterator            outbox                        ( const char      * email ) const;
+    CMailIterator outbox ( const char* email ) const;
     /*inbox
      *     zpřístupní poštu přijatou na zadanou adresu. Jinak metoda pracuje stejně jako metoda outbox.*/
-    CMailIterator            inbox                         ( const char      * email ) const;
-  
+    CMailIterator inbox ( const char* email ) const;
+
+    void print () const{
+        for(size_t i = 0; i < m_length; i++)
+            cout << m_MailList[i] << endl;
+    }
+
   private:
-    // todo
+    void realocate (){
+        CMail* tmp;
+        m_capacity *= 1.5;
+        tmp = new CMail[m_capacity];
+        for(size_t i = 0; i < m_length; i++)
+            tmp[i] = m_MailList[i];
+        delete [] m_MailList;
+        m_MailList = tmp;
+    }
 };
 
 //--------------------------------------------------------------------------------------------------------------
@@ -170,7 +211,7 @@ bool matchOutput ( const CMail& m, const char* str ){
 
 int main ()
 {
-  //char from[100], to[100], body[1024];
+  char from[100], to[100], body[1024];
 
   assert ( CMail ( "john", "peter", "progtest deadline" ) == CMail ( "john", "peter", "progtest deadline" ) );
   assert ( !( CMail ( "john", "peter", "progtest deadline" ) == CMail ( "john", "progtest deadline", "peter" ) ) );
@@ -178,8 +219,9 @@ int main ()
   assert ( !( CMail ( "john", "peter", "progtest deadline" ) == CMail ( "peter", "progtest deadline", "john" ) ) );
   assert ( !( CMail ( "john", "peter", "progtest deadline" ) == CMail ( "progtest deadline", "john", "peter" ) ) );
   assert ( !( CMail ( "john", "peter", "progtest deadline" ) == CMail ( "progtest deadline", "peter", "john" ) ) );
-  /*
   CMailServer s0;
+  cout << "succesful creation" << endl;
+
   s0 . sendMail ( CMail ( "john", "peter", "some important mail" ) );
   strncpy ( from, "john", sizeof ( from ) );
   strncpy ( to, "thomas", sizeof ( to ) );
@@ -191,6 +233,9 @@ int main ()
   s0 . sendMail ( CMail ( from, to, body ) );
   s0 . sendMail ( CMail ( "alice", "john", "deadline confirmation" ) );
   s0 . sendMail ( CMail ( "peter", "alice", "PR bullshit" ) );
+  s0.print();
+
+  /*
   CMailIterator i0 = s0 . inbox ( "alice" );
   assert ( i0 && *i0 == CMail ( "john", "alice", "deadline notice" ) );
   assert ( matchOutput ( *i0,  "From: john, To: alice, Body: deadline notice" ) );
