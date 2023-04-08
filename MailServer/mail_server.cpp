@@ -78,6 +78,16 @@ class CMail{
     CMail( const char * from, const char * to, const char * body ):
            m_from(from), m_to(to), m_body(body){
     };
+
+    CMail& operator = (const CMail& rhs){
+        if ( &rhs != this )
+        {
+            m_from = rhs.m_from;
+            m_to = rhs.m_to;
+            m_body = rhs.m_body;
+        }
+        return *this;
+    };
     /*operator ==
       porovná obsah dvou instancí CMail, metoda vrací true, pokud jsou instance
       identické (shodují se všechny složky from, to i obsah e-mailu).*/
@@ -106,6 +116,51 @@ ostream& operator << ( ostream& out, const CMail& outMail ){
         << ", Body: " << outMail.m_body;
     return out;
 }
+
+//-----------------------------------------------------------------------------------------------------------------
+
+class CUser{
+    int* sent;
+    int* recieved;
+    size_t sentLen;
+    size_t sentCap;
+    size_t recievedLen;
+    size_t recievedCap;
+public:
+    CUser():sentLen(0), recievedLen(0), sentCap(5), recievedCap(5){
+        sent = new int [sentCap];
+        recieved = new int [recievedCap];
+    };
+
+    ~CUser(){
+        delete [] sent;
+        delete [] recieved;
+    }
+
+    void sentAdd(const int idx){
+        if(sentLen+1 == sentCap)
+            realocate(sentCap, sentLen, sent);
+        sent[sentLen + 1] = idx;
+        sentLen ++;
+    }
+
+    void recievedAdd(const int idx){
+        if(recievedLen+1 == recievedCap)
+            realocate(recievedCap, recievedLen, recieved);
+        recieved[recievedLen + 1] = idx;
+        recievedLen ++;
+    }
+
+    static void realocate ( size_t& cap, const size_t& len, int*& arr){
+        int* tmp;
+        cap *= 1.5;
+        tmp = new int[cap];
+        for(size_t i = 0; i < len; i++)
+            tmp[i] = arr[i];
+        delete [] arr;
+        arr = tmp;
+    }
+};
 
 //-----------------------------------------------------------------------------------------------------------------
 
@@ -154,8 +209,22 @@ class CMailServer{
     /*copy constructor / operator =
      *     vytvoří identické kopie instance podle standardních pravidel,*/
     CMailServer ( const CMailServer& src ):m_length(src.m_length), m_capacity(src.m_capacity){
+        m_MailList = new CMail[m_capacity];
+        for(int i = 0; i < m_length; i++)
+            m_MailList[i] = src.m_MailList[i];
     };
-    CMailServer& operator = ( const CMailServer& src );
+
+    CMailServer& operator = ( const CMailServer& src ){
+        if ( &src != this ) {
+            delete[] m_MailList;
+            m_length = src.m_length;
+            m_capacity = src.m_capacity;
+            m_MailList = new CMail[m_capacity];
+            for (int i = 0; i < m_length; i++)
+                m_MailList[i] = src.m_MailList[i];
+        }
+        return *this;
+    };
     /*destructor
      *     uvolní prostředky alokované instancí,*/
     ~CMailServer (){
