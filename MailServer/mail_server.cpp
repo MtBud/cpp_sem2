@@ -24,10 +24,10 @@ public:
     CustomStr():m_String(nullptr), m_length(0), m_capacity(0){};
 
     explicit CustomStr(const char* str){
-        m_String = new char [strlen(str) + 1];
-        strcpy(m_String, str);
-        m_length = strlen(m_String);
+        m_length = strlen(str);
         m_capacity = m_length + 1;
+        m_String = new char [m_capacity];
+        memcpy( m_String, str, m_capacity );
     };
 
     ~CustomStr(){
@@ -48,7 +48,7 @@ public:
             m_capacity   = rhs.m_capacity;
             m_length   = rhs.m_length;
             m_String  = new char [m_capacity];
-            strcpy(m_String, rhs.m_String);
+            memcpy( m_String, rhs.m_String, m_length + 1 );
         }
         return *this;
     };
@@ -167,10 +167,12 @@ public:
             m_name = rhs.m_name;
             sent = new int[sentCap];
             recieved = new int[recievedCap];
-            for(size_t i = 0; i < rhs.sentLen; i++)
-                sent[i] = rhs.sent[i];
-            for(size_t i = 0; i < rhs.recievedLen; i++)
-                recieved[i] = rhs.recieved[i];
+            memcpy(sent, rhs.sent, sizeof(int) * sentLen);
+            memcpy(recieved, rhs.recieved, sizeof(int) * recievedLen);
+            //for(size_t i = 0; i < rhs.sentLen; i++)
+            //    sent[i] = rhs.sent[i];
+            //for(size_t i = 0; i < rhs.recievedLen; i++)
+            //    recieved[i] = rhs.recieved[i];
         }
         return *this;
     };
@@ -318,15 +320,12 @@ class CMailServer{
     size_t m_Ucapacity;
 
   public:
-    /*implicit constructor
-     *     vytvoří prázdnou instanci */
+
     CMailServer():m_length(0),m_capacity(2), m_Ulength(0), m_Ucapacity(2){
         m_MailList = new CMail[2];
         m_Users = new CUser[2];
     };
 
-    /*copy constructor / operator =
-     *     vytvoří identické kopie instance podle standardních pravidel,*/
     CMailServer ( const CMailServer& src ):m_length(src.m_length), m_capacity(src.m_capacity),
                                            m_Ulength(src.m_Ulength), m_Ucapacity(src.m_Ucapacity){
         m_MailList = new CMail[m_capacity];
@@ -354,16 +353,12 @@ class CMailServer{
         }
         return *this;
     };
-    /*destructor
-     *     uvolní prostředky alokované instancí,*/
+
     ~CMailServer (){
         delete [] m_MailList;
         delete [] m_Users;
     };
-    /*sendMail
-     * zašle e-mail předaný v parametrech, efektivně jej zařadí do odpovídajících schránek odesílatele a příjemce.
-     * E-mail je vždy zařazen na konec existujícího seznamu. Příjemce ani odesílatele není potřeba zakládat, schránka
-     * se automaticky vytvoří po zpracování prvního e-mailu, který obsahuje danou e-mailovou adresu,*/
+
     void sendMail ( const CMail& m ){
         if(m_length == m_capacity)
             realocateMail();
@@ -383,12 +378,7 @@ class CMailServer{
         m_Users[fromPos].sentAdd((int)m_length-1);
         m_Users[toPos].recievedAdd((int)m_length - 1);
     };
-    /*outbox
-     * zpřístupní poštu odeslanou ze zadané adresy. Návratovou hodnotou je instance CMailIterator, která umožní
-     * procházet emaily odeslané z adresy email. Pokud je zadaná neznámá e-mailová adresa, je výsledkem iterátor
-     * pro prázdný seznam e-mailů. Vrácený iterátor musí zachycovat stav mailové schránky v okamžiku, kdy byl vytvořen.
-     * Tedy pokud během používání iterátoru dojde ke změně obsahu procházené schránky, tato změna se do hodnot vracených
-     * iterátorem nijak nepromítne. Toto chování je demonstrované v ukázkovém běhu např. pro iterátor i5.*/
+
     CMailIterator outbox ( const char* email ) const{
         CustomStr emailStr(email);
         int pos = findUsersPos(emailStr);
@@ -627,6 +617,28 @@ int main ()
   assert ( matchOutput ( *i13,  "From: paul, To: alice, Body: invalid invoice" ) );
   assert ( ! ++i13 );
 
-  return EXIT_SUCCESS;
+
+  char* emailText = new char[200000];
+  cin >> emailText;
+  CMail longassmail("deez", "nuts", emailText);
+  CMailServer original;
+  original.sendMail(longassmail);
+  original.sendMail(longassmail);
+  original.sendMail(longassmail);
+  original.sendMail(longassmail);
+  original.sendMail(longassmail);
+  original.sendMail(longassmail);
+
+  CMailServer copy1 = original;
+  copy1.sendMail(longassmail);
+
+  CMailServer copy2 = copy1;
+  copy2.sendMail(longassmail);
+
+  CMailServer copy3 = copy2;
+  //copy3.print();
+
+
+    return EXIT_SUCCESS;
 }
 #endif /* __PROGTEST__ */
