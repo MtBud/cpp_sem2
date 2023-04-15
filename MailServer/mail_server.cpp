@@ -1,12 +1,12 @@
 #ifndef __PROGTEST__
 #include <cstring>
 #include <cstdlib>
-#include <cstdio>
+//#include <cstdio>
 #include <cassert>
-#include <cctype>
-#include <cmath>
+//#include <cctype>
+//#include <cmath>
 #include <iostream>
-#include <iomanip>
+//#include <iomanip>
 #include <sstream>
 using namespace std;
 #endif /* __PROGTEST__ */
@@ -54,11 +54,15 @@ public:
 
     operator const char* () const{
         return m_String;
-    }
+    };
 
-    size_t size()const{
-        return m_capacity;
-    }
+    bool operator == (const CustomStr& rhs) const{
+        if(strcmp(m_String, rhs.m_String) == 0)
+            return true;
+        else
+            return false;
+    };
+
 private:
 };
 
@@ -101,6 +105,14 @@ class CMail{
         return true;
     };
 
+    CustomStr From() const{
+        return m_from;
+    }
+
+    CustomStr To() const{
+        return m_to;
+    }
+
     /*operator <<
      *     zobrazí informace o mailu do zadaného streamu. Formát je zřejmý z ukázky.*/
     friend ostream& operator << ( ostream& out, const CMail& outMail );
@@ -120,22 +132,47 @@ ostream& operator << ( ostream& out, const CMail& outMail ){
 //-----------------------------------------------------------------------------------------------------------------
 
 class CUser{
+    size_t sentCap;
+    size_t recievedCap;
+public:
+    CustomStr m_name;
     int* sent;
     int* recieved;
     size_t sentLen;
-    size_t sentCap;
     size_t recievedLen;
-    size_t recievedCap;
-public:
-    CUser():sentLen(0), recievedLen(0), sentCap(5), recievedCap(5){
+
+    CUser():sentCap(0), recievedCap(0), sentLen(0), recievedLen(0),
+            sent(nullptr), recieved(nullptr), m_name(){};
+
+    explicit CUser(const CustomStr& name):sentLen(0), recievedLen(0), sentCap(5), recievedCap(5){
         sent = new int [sentCap];
         recieved = new int [recievedCap];
+        m_name = name;
     };
 
     ~CUser(){
         delete [] sent;
         delete [] recieved;
     }
+
+    CUser& operator = (const CUser& rhs){
+        if ( &rhs != this )
+        {
+            delete [] sent;
+            delete [] recieved;
+            sentLen = rhs.sentLen;
+            sentCap = rhs.sentCap;
+            recievedLen = rhs.recievedLen;
+            recievedCap = rhs.recievedCap;
+            sent = new int[sentCap];
+            recieved = new int[recievedCap];
+            for(int i = 0; i < rhs.sentLen; i++)
+                sent[i] = rhs.sent[i];
+            for(int i = 0; i < rhs.recievedLen; i++)
+                recieved[i] = rhs.recieved[i];
+        }
+        return *this;
+    };
 
     void sentAdd(const int idx){
         if(sentLen+1 == sentCap)
@@ -164,31 +201,67 @@ public:
 
 //-----------------------------------------------------------------------------------------------------------------
 
-class CMailIterator
+class CMailIterator{
         /*copy constructor, operator =, destructor
          *     podle způsobu implementace možná nebude postačovat automaticky generovaná varianta.
          *     Testovací prostředí iterátory nikde explicitně nekopíruje, ale ke kopírování dochází
          *     v okamžiku předávání návratové hodnoty metodami inbox a outbox.*/
-{
   public:
+    CMail* m_mailSnap;
+    int* m_idxArr;
+    size_t m_idx;
+    size_t m_len;
+
+    CMailIterator():m_idx(0), m_len(0), m_idxArr(nullptr), m_mailSnap(nullptr){};
+
+    explicit CMailIterator( const int* idxArr, const size_t len, const CMail* mailList, const size_t mailLen)
+                           :m_idx(0), m_len(len){
+        m_idxArr = new int[m_len + 1];
+        for(size_t i = 0; i < m_len; i++)
+            m_idxArr[i] = idxArr[i];
+        m_mailSnap = new CMail[mailLen];
+        for(size_t i = 0; i < mailLen; i++){
+            m_mailSnap[i] = mailList[i];
+        }
+    };
+
+    ~CMailIterator(){
+        delete [] m_mailSnap;
+        delete [] m_idxArr;
+    };
     /*operator bool
      *     operátor zjistí, zda iterátor odkazuje na platný e-mail (vrací true), nebo zda dosáhl za poslední e-mail
      *     v seznamu (tedy e-mail už nelze číst, vrátí false),*/
-    explicit operator bool ( void ) const;
+    explicit operator bool () const{
+        if(m_idx < m_len)
+            return true;
+        else
+            return false;
+    };
     /*operator !
      *     funguje stejně jako předešlý operátor, pouze vrací opačnou návratovou hodnotu */
-    bool operator ! ( void ) const;
+    bool operator ! () const{
+        if(m_idx < m_len)
+            return false;
+        else
+            return true;
+    };
     /*operator *
      * unární operátor * zpřístupní e-mail na aktuální pozici. Návratovou hodnotou je instance CMail
      * (případně konstantní reference na CMail). Nemusíte řešit situaci, že by se zpřístupnil e-mail za koncem
      * seznamu - testovací prostředí vždy nejprve kontroluje platnost iterátoru a teprve pak případně
      * zpřístupní odkazovaný e-mail.*/
-    const CMail& operator * ( void ) const;
+    const CMail& operator * () const{
+        return m_mailSnap[m_idxArr[m_idx]];
+    };
     /*prefixový operátor ++ zajistí přesun iterátoru na další e-mail v seznamu. E-maily jsou iterátorem procházené
      * v pořadí, ve kterém byly odeslané/přijaté. Opakovaným voláním tohoto iterátoru se lze přesunout od prvního
      * e-mailu přijatého/odeslaného zadanou e-mailovou adresou až k poslednímu
      * (pak musí operátor přetypování na bool vracet false).*/
-    CMailIterator& operator ++ ( void );
+    CMailIterator& operator ++ (){
+        m_idx ++;
+        return *this;
+    };
   private:
     // todo
 };
@@ -196,32 +269,46 @@ class CMailIterator
 //------------------------------------------------------------------------------------------------------------------
 
 class CMailServer{
+    CUser* m_Users;
+    size_t m_Ulength;
+    size_t m_Ucapacity;
     CMail* m_MailList;
     size_t m_length;
     size_t m_capacity;
   public:
     /*implicit constructor
      *     vytvoří prázdnou instanci */
-    CMailServer():m_length(0),m_capacity(2){
+    CMailServer():m_length(0),m_capacity(2), m_Ulength(0), m_Ucapacity(2){
         m_MailList = new CMail[2];
+        m_Users = new CUser[2];
     };
 
     /*copy constructor / operator =
      *     vytvoří identické kopie instance podle standardních pravidel,*/
-    CMailServer ( const CMailServer& src ):m_length(src.m_length), m_capacity(src.m_capacity){
+    CMailServer ( const CMailServer& src ):m_length(src.m_length), m_capacity(src.m_capacity),
+                                           m_Ulength(src.m_Ulength), m_Ucapacity(src.m_Ucapacity){
         m_MailList = new CMail[m_capacity];
+        m_Users = new CUser[m_Ucapacity];
         for(int i = 0; i < m_length; i++)
             m_MailList[i] = src.m_MailList[i];
+        for(int i = 0; i < m_Ulength; i++)
+            m_Users[i] = src.m_Users[i];
     };
 
     CMailServer& operator = ( const CMailServer& src ){
         if ( &src != this ) {
             delete[] m_MailList;
+            delete [] m_Users;
             m_length = src.m_length;
             m_capacity = src.m_capacity;
+            m_Ulength = src.m_Ulength;
+            m_Ucapacity = src.m_Ucapacity;
             m_MailList = new CMail[m_capacity];
+            m_Users = new CUser[m_Ucapacity];
             for (int i = 0; i < m_length; i++)
                 m_MailList[i] = src.m_MailList[i];
+            for (int i = 0; i < m_Ulength; i++)
+                m_Users[i] = src.m_Users[i];
         }
         return *this;
     };
@@ -229,6 +316,7 @@ class CMailServer{
      *     uvolní prostředky alokované instancí,*/
     ~CMailServer (){
         delete [] m_MailList;
+        delete [] m_Users;
     };
     /*sendMail
      * zašle e-mail předaný v parametrech, efektivně jej zařadí do odpovídajících schránek odesílatele a příjemce.
@@ -236,9 +324,22 @@ class CMailServer{
      * se automaticky vytvoří po zpracování prvního e-mailu, který obsahuje danou e-mailovou adresu,*/
     void sendMail ( const CMail& m ){
         if(m_length == m_capacity)
-            realocate();
+            realocateMail();
         m_MailList[m_length] = m;
         m_length ++;
+
+        int fromPos = findUsersPos(m.From());
+        int toPos = findUsersPos(m.To());
+        if(fromPos == -1) {
+            addUser(m.From());
+            fromPos = (int)m_Ulength - 1;
+        }
+        if(toPos == -1) {
+            addUser(m.To());
+            toPos = (int)m_Ulength - 1;
+        }
+        m_Users[fromPos].sentAdd((int)m_length-1);
+        m_Users[toPos].recievedAdd((int)m_length - 1);
     };
     /*outbox
      * zpřístupní poštu odeslanou ze zadané adresy. Návratovou hodnotou je instance CMailIterator, která umožní
@@ -246,10 +347,30 @@ class CMailServer{
      * pro prázdný seznam e-mailů. Vrácený iterátor musí zachycovat stav mailové schránky v okamžiku, kdy byl vytvořen.
      * Tedy pokud během používání iterátoru dojde ke změně obsahu procházené schránky, tato změna se do hodnot vracených
      * iterátorem nijak nepromítne. Toto chování je demonstrované v ukázkovém běhu např. pro iterátor i5.*/
-    CMailIterator outbox ( const char* email ) const;
+    CMailIterator outbox ( const char* email ) const{
+        int pos = findUsersPos(email);
+        CUser tmp;
+        if(pos == -1) {
+            CMailIterator iterOut;
+            return iterOut;
+        }
+        tmp = m_Users[pos];
+        CMailIterator iterOut(tmp.sent, tmp.sentLen, m_MailList, m_length);
+        return iterOut;
+    };
     /*inbox
      *     zpřístupní poštu přijatou na zadanou adresu. Jinak metoda pracuje stejně jako metoda outbox.*/
-    CMailIterator inbox ( const char* email ) const;
+    CMailIterator inbox ( const char* email ) const{
+        int pos = findUsersPos(email);
+        CUser tmp;
+        if(pos == -1) {
+            CMailIterator iterOut;
+            return iterOut;
+        }
+        tmp = m_Users[pos];
+        CMailIterator iterOut(tmp.recieved, tmp.recievedLen, m_MailList, m_length);
+        return iterOut;
+    };
 
     void print () const{
         for(size_t i = 0; i < m_length; i++)
@@ -257,7 +378,7 @@ class CMailServer{
     }
 
   private:
-    void realocate (){
+    void realocateMail(){
         CMail* tmp;
         m_capacity *= 1.5;
         tmp = new CMail[m_capacity];
@@ -265,6 +386,33 @@ class CMailServer{
             tmp[i] = m_MailList[i];
         delete [] m_MailList;
         m_MailList = tmp;
+    }
+
+    void realocateUsers(){
+        CUser* tmp;
+        m_Ucapacity *= 1.5;
+        tmp = new CUser[m_Ucapacity];
+        for(size_t i = 0; i < m_Ulength; i++)
+            tmp[i] = m_Users[i];
+        delete [] m_Users;
+        m_Users = tmp;
+    }
+
+    int findUsersPos(const char* name) const{
+        for(int i = 0; i < m_Ulength; i ++){
+            if(m_Users[i].m_name == name){
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    void addUser(const CustomStr& name){
+        CUser newUser(name);
+        if(m_Ulength == m_Ucapacity)
+            realocateUsers();
+        m_Users[m_Ulength] = newUser;
+        m_Ulength ++;
     }
 };
 
