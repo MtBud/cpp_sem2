@@ -141,10 +141,9 @@ public:
     size_t sentLen;
     size_t recievedLen;
 
-    CUser():sentCap(0), recievedCap(0), sentLen(0), recievedLen(0),
-            sent(nullptr), recieved(nullptr), m_name(){};
+    CUser():sentCap(0), recievedCap(0), m_name(), sent(nullptr), recieved(nullptr), sentLen(0), recievedLen(0){};
 
-    explicit CUser(const CustomStr& name):sentLen(0), recievedLen(0), sentCap(5), recievedCap(5){
+    explicit CUser(const CustomStr& name):sentCap(5), recievedCap(5), sentLen(0), recievedLen(0){
         sent = new int [sentCap];
         recieved = new int [recievedCap];
         m_name = name;
@@ -166,9 +165,9 @@ public:
             recievedCap = rhs.recievedCap;
             sent = new int[sentCap];
             recieved = new int[recievedCap];
-            for(int i = 0; i < rhs.sentLen; i++)
+            for(size_t i = 0; i < rhs.sentLen; i++)
                 sent[i] = rhs.sent[i];
-            for(int i = 0; i < rhs.recievedLen; i++)
+            for(size_t i = 0; i < rhs.recievedLen; i++)
                 recieved[i] = rhs.recieved[i];
         }
         return *this;
@@ -206,13 +205,12 @@ class CMailIterator{
          *     podle způsobu implementace možná nebude postačovat automaticky generovaná varianta.
          *     Testovací prostředí iterátory nikde explicitně nekopíruje, ale ke kopírování dochází
          *     v okamžiku předávání návratové hodnoty metodami inbox a outbox.*/
-  public:
     CMail* m_mailSnap;
     int* m_idxArr;
     size_t m_idx;
     size_t m_len;
-
-    CMailIterator():m_idx(0), m_len(0), m_idxArr(nullptr), m_mailSnap(nullptr){};
+  public:
+    CMailIterator():m_mailSnap(nullptr), m_idxArr(nullptr), m_idx(0), m_len(0){};
 
     explicit CMailIterator( const int* idxArr, const size_t len, const CMail* mailList, const size_t mailLen)
                            :m_idx(0), m_len(len){
@@ -269,12 +267,13 @@ class CMailIterator{
 //------------------------------------------------------------------------------------------------------------------
 
 class CMailServer{
-    CUser* m_Users;
-    size_t m_Ulength;
-    size_t m_Ucapacity;
     CMail* m_MailList;
     size_t m_length;
     size_t m_capacity;
+    CUser* m_Users;
+    size_t m_Ulength;
+    size_t m_Ucapacity;
+
   public:
     /*implicit constructor
      *     vytvoří prázdnou instanci */
@@ -289,9 +288,9 @@ class CMailServer{
                                            m_Ulength(src.m_Ulength), m_Ucapacity(src.m_Ucapacity){
         m_MailList = new CMail[m_capacity];
         m_Users = new CUser[m_Ucapacity];
-        for(int i = 0; i < m_length; i++)
+        for(size_t i = 0; i < m_length; i++)
             m_MailList[i] = src.m_MailList[i];
-        for(int i = 0; i < m_Ulength; i++)
+        for(size_t i = 0; i < m_Ulength; i++)
             m_Users[i] = src.m_Users[i];
     };
 
@@ -305,9 +304,9 @@ class CMailServer{
             m_Ucapacity = src.m_Ucapacity;
             m_MailList = new CMail[m_capacity];
             m_Users = new CUser[m_Ucapacity];
-            for (int i = 0; i < m_length; i++)
+            for (size_t i = 0; i < m_length; i++)
                 m_MailList[i] = src.m_MailList[i];
-            for (int i = 0; i < m_Ulength; i++)
+            for (size_t i = 0; i < m_Ulength; i++)
                 m_Users[i] = src.m_Users[i];
         }
         return *this;
@@ -399,7 +398,7 @@ class CMailServer{
     }
 
     int findUsersPos(const char* name) const{
-        for(int i = 0; i < m_Ulength; i ++){
+        for(size_t i = 0; i < m_Ulength; i ++){
             if(m_Users[i].m_name == name){
                 return i;
             }
@@ -452,7 +451,7 @@ int main ()
   s0 . sendMail ( CMail ( "peter", "alice", "PR bullshit" ) );
   s0.print();
 
-  /*
+
   CMailIterator i0 = s0 . inbox ( "alice" );
   assert ( i0 && *i0 == CMail ( "john", "alice", "deadline notice" ) );
   assert ( matchOutput ( *i0,  "From: john, To: alice, Body: deadline notice" ) );
@@ -566,7 +565,7 @@ int main ()
   assert ( ++i13 && *i13 == CMail ( "paul", "alice", "invalid invoice" ) );
   assert ( matchOutput ( *i13,  "From: paul, To: alice, Body: invalid invoice" ) );
   assert ( ! ++i13 );
-  */
+
   return EXIT_SUCCESS;
 }
 #endif /* __PROGTEST__ */
