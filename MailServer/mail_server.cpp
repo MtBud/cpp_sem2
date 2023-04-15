@@ -31,6 +31,7 @@ public:
     };
 
     ~CustomStr(){
+        //cout << m_String << endl;
         delete [] m_String;
     };
 
@@ -47,7 +48,7 @@ public:
             m_capacity   = rhs.m_capacity;
             m_length   = rhs.m_length;
             m_String  = new char [m_capacity];
-            memcpy  ( m_String, rhs.m_String, m_length + 1 );
+            strcpy(m_String, rhs.m_String);
         }
         return *this;
     };
@@ -163,6 +164,7 @@ public:
             sentCap = rhs.sentCap;
             recievedLen = rhs.recievedLen;
             recievedCap = rhs.recievedCap;
+            m_name = rhs.m_name;
             sent = new int[sentCap];
             recieved = new int[recievedCap];
             for(size_t i = 0; i < rhs.sentLen; i++)
@@ -174,16 +176,16 @@ public:
     };
 
     void sentAdd(const int idx){
-        if(sentLen+1 == sentCap)
+        if(sentLen == sentCap)
             realocate(sentCap, sentLen, sent);
-        sent[sentLen + 1] = idx;
+        sent[sentLen] = idx;
         sentLen ++;
     }
 
     void recievedAdd(const int idx){
-        if(recievedLen+1 == recievedCap)
+        if(recievedLen == recievedCap)
             realocate(recievedCap, recievedLen, recieved);
-        recieved[recievedLen + 1] = idx;
+        recieved[recievedLen] = idx;
         recievedLen ++;
     }
 
@@ -196,24 +198,35 @@ public:
         delete [] arr;
         arr = tmp;
     }
+
+    void printUserSentIndexes() const{
+        cout << "PRINT USER SENT INDEXES" << endl;
+        for(size_t i = 0; i < sentLen; i++)
+            cout << '\t' << sent[i] << endl;
+        cout << endl;
+    };
+
+    void printUserRecievedIndexes() const{
+        cout << "PRINT USER RECIEVED INDEXES" << endl;
+        for(size_t i = 0; i < recievedLen; i++)
+            cout << '\t' << recieved[i] << endl;
+        cout << endl;
+    };
 };
 
 //-----------------------------------------------------------------------------------------------------------------
 
 class CMailIterator{
-        /*copy constructor, operator =, destructor
-         *     podle způsobu implementace možná nebude postačovat automaticky generovaná varianta.
-         *     Testovací prostředí iterátory nikde explicitně nekopíruje, ale ke kopírování dochází
-         *     v okamžiku předávání návratové hodnoty metodami inbox a outbox.*/
     CMail* m_mailSnap;
+    size_t m_mailLen;
     int* m_idxArr;
     size_t m_idx;
     size_t m_len;
   public:
-    CMailIterator():m_mailSnap(nullptr), m_idxArr(nullptr), m_idx(0), m_len(0){};
+    CMailIterator():m_mailSnap(nullptr), m_mailLen(0), m_idxArr(nullptr), m_idx(0), m_len(0){};
 
-    explicit CMailIterator( const int* idxArr, const size_t len, const CMail* mailList, const size_t mailLen)
-                           :m_idx(0), m_len(len){
+    explicit CMailIterator( const int idxArr[], const size_t len, const CMail mailList[], const size_t mailLen)
+                           :m_mailLen(mailLen), m_idx(0), m_len(len){
         m_idxArr = new int[m_len + 1];
         for(size_t i = 0; i < m_len; i++)
             m_idxArr[i] = idxArr[i];
@@ -223,43 +236,73 @@ class CMailIterator{
         }
     };
 
+    CMailIterator( const CMailIterator& src):m_mailLen(src.m_mailLen), m_idx(src.m_idx), m_len(src.m_len){
+        m_mailSnap = new CMail[m_mailLen];
+        m_idxArr = new int[m_len];
+        for(size_t i = 0; i < m_mailLen; i ++)
+            m_mailSnap[i] = src.m_mailSnap[i];
+        for(size_t i = 0; i < m_len; i ++)
+            m_idxArr[i] = src.m_idxArr[i];
+    }
+
     ~CMailIterator(){
         delete [] m_mailSnap;
         delete [] m_idxArr;
     };
-    /*operator bool
-     *     operátor zjistí, zda iterátor odkazuje na platný e-mail (vrací true), nebo zda dosáhl za poslední e-mail
-     *     v seznamu (tedy e-mail už nelze číst, vrátí false),*/
+
+    CMailIterator& operator = ( const CMailIterator& src){
+        if (&src != this){
+            delete [] m_mailSnap;
+            delete [] m_idxArr;
+            m_mailLen = src.m_mailLen;
+            m_idx = src.m_idx;
+            m_len = src.m_len;
+            m_mailSnap = new CMail[m_mailLen];
+            m_idxArr = new int[m_len];
+            for(size_t i = 0; i < m_mailLen; i ++)
+                m_mailSnap[i] = src.m_mailSnap[i];
+            for(size_t i = 0; i < m_len; i ++)
+                m_idxArr[i] = src.m_idxArr[i];
+        }
+        return *this;
+    }
+
     explicit operator bool () const{
         if(m_idx < m_len)
             return true;
         else
             return false;
     };
-    /*operator !
-     *     funguje stejně jako předešlý operátor, pouze vrací opačnou návratovou hodnotu */
+
     bool operator ! () const{
         if(m_idx < m_len)
             return false;
         else
             return true;
     };
-    /*operator *
-     * unární operátor * zpřístupní e-mail na aktuální pozici. Návratovou hodnotou je instance CMail
-     * (případně konstantní reference na CMail). Nemusíte řešit situaci, že by se zpřístupnil e-mail za koncem
-     * seznamu - testovací prostředí vždy nejprve kontroluje platnost iterátoru a teprve pak případně
-     * zpřístupní odkazovaný e-mail.*/
+
     const CMail& operator * () const{
         return m_mailSnap[m_idxArr[m_idx]];
     };
-    /*prefixový operátor ++ zajistí přesun iterátoru na další e-mail v seznamu. E-maily jsou iterátorem procházené
-     * v pořadí, ve kterém byly odeslané/přijaté. Opakovaným voláním tohoto iterátoru se lze přesunout od prvního
-     * e-mailu přijatého/odeslaného zadanou e-mailovou adresou až k poslednímu
-     * (pak musí operátor přetypování na bool vracet false).*/
+
     CMailIterator& operator ++ (){
         m_idx ++;
         return *this;
     };
+
+    void printIteratorIndexes() const{
+        cout << "PRINT ITERATOR INDEXES" << endl;
+        for(size_t i = 0; i < m_len; i++)
+            cout << m_idxArr[i] << endl;
+        cout << endl;
+    };
+
+    void printCurrentSpot() const{
+        cout << "PRINT CURRENT ITERATION" << endl;
+        cout << m_idx << endl;
+        cout << m_mailSnap[m_idxArr[0]] << endl;
+        cout << endl;
+    }
   private:
     // todo
 };
@@ -328,11 +371,11 @@ class CMailServer{
         m_length ++;
 
         int fromPos = findUsersPos(m.From());
-        int toPos = findUsersPos(m.To());
         if(fromPos == -1) {
             addUser(m.From());
             fromPos = (int)m_Ulength - 1;
         }
+        int toPos = findUsersPos(m.To());
         if(toPos == -1) {
             addUser(m.To());
             toPos = (int)m_Ulength - 1;
@@ -347,7 +390,8 @@ class CMailServer{
      * Tedy pokud během používání iterátoru dojde ke změně obsahu procházené schránky, tato změna se do hodnot vracených
      * iterátorem nijak nepromítne. Toto chování je demonstrované v ukázkovém běhu např. pro iterátor i5.*/
     CMailIterator outbox ( const char* email ) const{
-        int pos = findUsersPos(email);
+        CustomStr emailStr(email);
+        int pos = findUsersPos(emailStr);
         CUser tmp;
         if(pos == -1) {
             CMailIterator iterOut;
@@ -357,10 +401,10 @@ class CMailServer{
         CMailIterator iterOut(tmp.sent, tmp.sentLen, m_MailList, m_length);
         return iterOut;
     };
-    /*inbox
-     *     zpřístupní poštu přijatou na zadanou adresu. Jinak metoda pracuje stejně jako metoda outbox.*/
+
     CMailIterator inbox ( const char* email ) const{
-        int pos = findUsersPos(email);
+        CustomStr emailStr(email);
+        int pos = findUsersPos(emailStr);
         CUser tmp;
         if(pos == -1) {
             CMailIterator iterOut;
@@ -371,9 +415,21 @@ class CMailServer{
         return iterOut;
     };
 
-    void print () const{
+    void print() const{
+        cout << "PRINT MAIL LIST" << endl;
         for(size_t i = 0; i < m_length; i++)
-            cout << m_MailList[i] << endl;
+            cout << i <<"  " << m_MailList[i] << endl;
+        cout << endl;
+    }
+
+    void printUsers() const{
+        cout << "PRINT USERS" << endl;
+        for(size_t i = 0; i < m_Ulength; i++){
+            cout << m_Users[i].m_name <<endl;
+            //m_Users[i].printUserSentIndexes();
+            //m_Users[i].printUserRecievedIndexes();
+        }
+        cout << endl;
     }
 
   private:
@@ -397,10 +453,10 @@ class CMailServer{
         m_Users = tmp;
     }
 
-    int findUsersPos(const char* name) const{
+    int findUsersPos(const CustomStr& name) const{
         for(size_t i = 0; i < m_Ulength; i ++){
             if(m_Users[i].m_name == name){
-                return i;
+                return (int) i;
             }
         }
         return -1;
@@ -436,7 +492,6 @@ int main ()
   assert ( !( CMail ( "john", "peter", "progtest deadline" ) == CMail ( "progtest deadline", "john", "peter" ) ) );
   assert ( !( CMail ( "john", "peter", "progtest deadline" ) == CMail ( "progtest deadline", "peter", "john" ) ) );
   CMailServer s0;
-  cout << "succesful creation" << endl;
 
   s0 . sendMail ( CMail ( "john", "peter", "some important mail" ) );
   strncpy ( from, "john", sizeof ( from ) );
@@ -450,9 +505,15 @@ int main ()
   s0 . sendMail ( CMail ( "alice", "john", "deadline confirmation" ) );
   s0 . sendMail ( CMail ( "peter", "alice", "PR bullshit" ) );
   s0.print();
+  s0.printUsers();
+  cout << "deez" << endl;
+  CMail nuts("from", "to", "body");
 
-
+// here
   CMailIterator i0 = s0 . inbox ( "alice" );
+  i0.printIteratorIndexes();
+  i0.printCurrentSpot();
+  assert ( *i0 == CMail ( "john", "alice", "deadline notice" ) );
   assert ( i0 && *i0 == CMail ( "john", "alice", "deadline notice" ) );
   assert ( matchOutput ( *i0,  "From: john, To: alice, Body: deadline notice" ) );
   assert ( ++i0 && *i0 == CMail ( "peter", "alice", "PR bullshit" ) );
