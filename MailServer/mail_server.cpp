@@ -217,52 +217,46 @@ public:
 };
 
 //-----------------------------------------------------------------------------------------------------------------
+class CMailServer;
 
 class CMailIterator{
-    CMail* m_mailSnap;
+    const CMailServer* m_server;
     size_t m_mailLen;
     int* m_idxArr;
     size_t m_idx;
     size_t m_len;
   public:
-    CMailIterator():m_mailSnap(nullptr), m_mailLen(0), m_idxArr(nullptr), m_idx(0), m_len(0){};
+    CMailIterator():m_server(nullptr), m_mailLen(0), m_idxArr(nullptr), m_idx(0), m_len(0){};
 
-    explicit CMailIterator( const int idxArr[], const size_t len, const CMail mailList[], const size_t mailLen)
+    explicit CMailIterator( const int idxArr[], const size_t len, const CMailServer* server, const size_t mailLen)
                            :m_mailLen(mailLen), m_idx(0), m_len(len){
         m_idxArr = new int[m_len + 1];
-        for(size_t i = 0; i < m_len; i++)
+        for(size_t i = 0; i < m_len; i++){
             m_idxArr[i] = idxArr[i];
-        m_mailSnap = new CMail[mailLen];
-        for(size_t i = 0; i < mailLen; i++){
-            m_mailSnap[i] = mailList[i];
         }
+        m_server = server;
     };
 
     CMailIterator( const CMailIterator& src):m_mailLen(src.m_mailLen), m_idx(src.m_idx), m_len(src.m_len){
-        m_mailSnap = new CMail[m_mailLen];
         m_idxArr = new int[m_len];
-        for(size_t i = 0; i < m_mailLen; i ++)
-            m_mailSnap[i] = src.m_mailSnap[i];
         for(size_t i = 0; i < m_len; i ++)
             m_idxArr[i] = src.m_idxArr[i];
+        m_server = src.m_server;
+        m_server = src.m_server;
     }
 
     ~CMailIterator(){
-        delete [] m_mailSnap;
         delete [] m_idxArr;
     };
 
     CMailIterator& operator = ( const CMailIterator& src){
         if (&src != this){
-            delete [] m_mailSnap;
             delete [] m_idxArr;
             m_mailLen = src.m_mailLen;
             m_idx = src.m_idx;
             m_len = src.m_len;
-            m_mailSnap = new CMail[m_mailLen];
+            m_server = src.m_server;
             m_idxArr = new int[m_len];
-            for(size_t i = 0; i < m_mailLen; i ++)
-                m_mailSnap[i] = src.m_mailSnap[i];
             for(size_t i = 0; i < m_len; i ++)
                 m_idxArr[i] = src.m_idxArr[i];
         }
@@ -283,9 +277,7 @@ class CMailIterator{
             return true;
     };
 
-    const CMail& operator * () const{
-        return m_mailSnap[m_idxArr[m_idx]];
-    };
+    const CMail& operator * () const;
 
     CMailIterator& operator ++ (){
         m_idx ++;
@@ -299,10 +291,10 @@ class CMailIterator{
         cout << endl;
     };
 
-    void printCurrentSpot() const{
+    void printCurrentIteration() const{
         cout << "PRINT CURRENT ITERATION" << endl;
         cout << m_idx << endl;
-        cout << m_mailSnap[m_idxArr[0]] << endl;
+        cout << endl;
         cout << endl;
     }
   private:
@@ -388,7 +380,7 @@ class CMailServer{
             return iterOut;
         }
         tmp = m_Users[pos];
-        CMailIterator iterOut(tmp.sent, tmp.sentLen, m_MailList, m_length);
+        CMailIterator iterOut(tmp.sent, tmp.sentLen, this, m_length);
         return iterOut;
     };
 
@@ -401,7 +393,7 @@ class CMailServer{
             return iterOut;
         }
         tmp = m_Users[pos];
-        CMailIterator iterOut(tmp.recieved, tmp.recievedLen, m_MailList, m_length);
+        CMailIterator iterOut(tmp.recieved, tmp.recievedLen, this, m_length);
         return iterOut;
     };
 
@@ -420,6 +412,10 @@ class CMailServer{
             //m_Users[i].printUserRecievedIndexes();
         }
         cout << endl;
+    }
+
+    CMail& printMailList(size_t idx) const{
+        return m_MailList[idx];
     }
 
   private:
@@ -460,6 +456,11 @@ class CMailServer{
         m_Ulength ++;
     }
 };
+
+const CMail& CMailIterator::operator * () const{
+    //cout << m_server->printMailList(m_idxArr[m_idx]) << endl;
+    return m_server->printMailList(m_idxArr[m_idx]);
+}
 
 //--------------------------------------------------------------------------------------------------------------
 
@@ -502,7 +503,8 @@ int main ()
 // here
   CMailIterator i0 = s0 . inbox ( "alice" );
   i0.printIteratorIndexes();
-  i0.printCurrentSpot();
+  i0.printCurrentIteration();
+  //assert ( i0 );
   assert ( *i0 == CMail ( "john", "alice", "deadline notice" ) );
   assert ( i0 && *i0 == CMail ( "john", "alice", "deadline notice" ) );
   assert ( matchOutput ( *i0,  "From: john, To: alice, Body: deadline notice" ) );
@@ -618,9 +620,10 @@ int main ()
   assert ( ! ++i13 );
 
 
-  char* emailText = new char[200000];
-  cin >> emailText;
-  CMail longassmail("deez", "nuts", emailText);
+  //char* emailText = new char[200000];
+  //cin >> emailText;
+  //emailText = "some random shit";
+  CMail longassmail("deez", "nuts", "some random shit");
   CMailServer original;
   original.sendMail(longassmail);
   original.sendMail(longassmail);
