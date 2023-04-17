@@ -63,42 +63,65 @@ class CDate{
 
 // reprezentuje jednu fakturu
 class CInvoice{
+    CDate m_date;
+    string m_seller;
+    string m_buyer;
+    unsigned int m_amount;
+    double m_vat;
   public:
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "modernize-pass-by-value"
     /*    inicializace fakturu datem, jménem prodávající a kupující firmy, fakturovanou částkou a DPH.*/
     CInvoice ( const CDate& date, const string& seller, const string& buyer,
-               unsigned int amount, double vat );
+               unsigned int amount, double vat ):m_date(date), m_seller(seller), m_buyer(buyer), m_amount(amount), m_vat(vat){};
+#pragma clang diagnostic pop
 
     /*date, seller, buyer, amount, vat -- přístupové metody ke čtení jednotlivých složek faktury.*/
-    CDate date () const;
-    string buyer () const;
-    string seller () const;
-    unsigned int amount () const;
-    double vat () const;
-  private:
-    // todo
+    CDate date () const{
+        return m_date;
+    };
+    string buyer () const{
+        return m_buyer;
+    };
+    string seller () const{
+        return m_seller;
+    };
+    unsigned int amount () const{
+        return m_amount;
+    };
+    double vat () const{
+        return m_vat;
+    };
 };
 
-
+struct CSortKey{
+    int m_key;
+    bool m_ascending;
+    CSortKey( int key, bool ascending ): m_key(key), m_ascending(ascending){};
+};
 /*Třída CSortOpt určuje kritéria pro řazení. Pro řazení lze použít všechny složky faktury. Pokud například vytvoříme instanci:
  * CSortOpt () . addKey ( CSortOpt::BY_AMOUNT, true ) . addKey ( CSortOpt::BY_SELLER, false )
  * pak se řadí podle fakturované částky vzestupně (první řadicí kritérium) a pro stejné hodnoty fakturované částky
  * se použije řazení podle jména prodávajícího sestupně (druhé řadicí kritérium). Pokud by ani takto nebylo pořadí
  * jednoznačně určené, použije se jako řadicí kritérium pořadí zavedení faktury do registru. Rozhraní třídy CSortOpt je:*/
 class CSortOpt{
+    vector <CSortKey> m_keys;
   public:
     static const int BY_DATE = 0;
     static const int BY_BUYER = 1;
     static const int BY_SELLER = 2;
     static const int BY_AMOUNT = 3;
     static const int BY_VAT = 4;
-    CSortOpt ();
-    CSortOpt& addKey ( int key, bool ascending = true );
-  private:
-    // todo
+    CSortOpt () = default;
+    CSortOpt& addKey ( int key, bool ascending = true ){
+        CSortKey newKey(key, ascending);
+        m_keys.push_back(newKey);
+        return *this;
+    };
 };
 
-// registruje odeslané a přijaté faktury
-class CVATRegister{
+class CVATRegister
+{
   public:
     //inicializuje prázdnou instanci registru,
     CVATRegister ();
@@ -145,11 +168,13 @@ class CVATRegister{
 };
 
 #ifndef __PROGTEST__
-bool equalLists ( const list<CInvoice> & a, const list<CInvoice> & b ){
+bool equalLists ( const list<CInvoice> & a, const list<CInvoice> & b )
+{
   // todo
 }
 
-int main (){
+int main ( void )
+{
   CVATRegister r;
   assert ( r . registerCompany ( "first Company" ) );
   assert ( r . registerCompany ( "Second     Company" ) );
