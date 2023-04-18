@@ -125,6 +125,19 @@ public:
     double vat () const{
         return m_vat;
     };
+    string buyerF () const{
+        return m_buyerF;
+    };
+
+    void flip(){
+        string tmp;
+        tmp = m_buyer;
+        m_buyer = m_seller;
+        m_seller = tmp;
+        tmp = m_buyerF;
+        m_buyerF = m_sellerF;
+        m_sellerF = tmp;
+    }
 
     bool operator == ( const CInvoice& rhs ){
         if (m_date.compare(rhs.m_date) != 0 ||
@@ -192,13 +205,10 @@ class CSortOpt{
 
 class CSoloInv{
     string m_name;
-    set <CInvoice, CInvoiceCompare> m_solos;
 public:
-    explicit CSoloInv(string& name):m_name(name){};
+    set <CInvoice, CInvoiceCompare> m_solos;
 
-    void addInvoice(const CInvoice& newInv){
-        m_solos.insert(newInv);
-    }
+    explicit CSoloInv(string name):m_name(std::move(name)){};
 
     string name () const{
         return m_name;
@@ -214,7 +224,6 @@ struct CSoloCompare{
 };
 
 /* containers:
- * set - companies
  * set - all accepted invoices -> sorted for easy serach
  * set - all issued   invoices -> sorted for easy serach
  * set - contains a class with all solo invoices for given company
@@ -250,21 +259,35 @@ class CVATRegister{
      * úspěch (true)/neúspěch (false). Za chybu je považováno, pokud prodávající / kupující ve faktuře nejsou
      * registrované, prodávající a kupující je ta samá firma nebo pokud stejná faktura již byla pomocí addIssued
      * zadaná (dvě faktury se musí lišit alespoň v jednom z: prodávající/kupující/datum/částka/DPH).*/
-    bool addIssued ( const CInvoice& newInv );
+    bool addIssued ( const CInvoice& newInv ){
+        if ( ! m_issued.insert(newInv).second )
+            return false;
+        CInvoice flipped = newInv;
+        flipped.flip();
+        // check if m_accept has the complementary invoice
+        if ( m_accepted.find(flipped) != m_accepted.end() ){
+            CSoloInv finder(flipped.buyerF());
+            auto pos = m_companies.find(finder);
+            //
+        }
+        else{
+
+        }
+    };
 
     /*    metoda přidá fakturu do registru, tuto metodu volá firma, která fakturu přijala (kupující).
      * Jinak se metoda chová stejně jako addIssued.*/
-    bool addAccepted ( const CInvoice& x );
+    bool addAccepted ( const CInvoice& newInv );
 
     /*metoda odebere fakturu z registru. Tuto metodu volá firma, která fakturu vydala a dříve zaregistrovala.
      * Návratovou hodnotou je příznak úspěch (true)/neúspěch (false). Za chybu je považováno, pokud identická
      * faktura nebyla dříve registrovaná metodou addIssued.*/
-    bool delIssued ( const CInvoice& x );
+    bool delIssued ( const CInvoice& newInv );
 
     /*metoda odebere fakturu z registru. Tuto metodu volá firma, která fakturu přijala a dříve zaregistrovala.
      * Návratovou hodnotou je příznak úspěch (true)/neúspěch (false). Za chybu je považováno, pokud identická
      * faktura nebyla dříve registrovaná metodou addAccepted.*/
-    bool delAccepted ( const CInvoice& x );
+    bool delAccepted ( const CInvoice& newInv );
 
     /*metoda nalezne všechny faktury, které se týkají zadané firmy company a nebyly spárované (tedy byly registrované
      * pouze pomocí addIssued nebo pouze pomocí addAccepted). Metoda vrátí seznam těchto faktur, faktury budou
