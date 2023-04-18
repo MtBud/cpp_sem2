@@ -61,6 +61,32 @@ class CDate{
 };
 #endif /* __PROGTEST__ */
 
+string trimWhitespace(const string& str){
+    size_t first = str.find_first_not_of(' ');
+    if (string::npos == first){
+        string empty;
+        return empty;
+    }
+    size_t last = str.find_last_not_of(' ');
+    return str.substr(first, (last - first + 1));
+}
+
+string removeWhitespace(const string &input, string &output){
+    unique_copy (input.begin(), input.end(), back_insert_iterator<string>(output),
+                 [](char a,char b){ return isspace(a) && isspace(b);});
+    return output;
+}
+
+string formatName ( string name ){
+    // capitalize all letters
+    transform( name.begin(), name.end(), name.begin(), [](unsigned char c) { return toupper(c); });
+    // remove whitespace
+    name = trimWhitespace(name);
+    string tmp;
+    name = removeWhitespace(name, tmp );
+    return name;
+}
+
 // reprezentuje jednu fakturu
 class CInvoice{
     CDate m_date;
@@ -68,12 +94,17 @@ class CInvoice{
     string m_buyer;
     unsigned int m_amount;
     double m_vat;
-  public:
+public:
+    string m_sellerF;
+    string m_buyerF;
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "modernize-pass-by-value"
     /*    inicializace fakturu datem, jménem prodávající a kupující firmy, fakturovanou částkou a DPH.*/
     CInvoice ( const CDate& date, const string& seller, const string& buyer,
-               unsigned int amount, double vat ):m_date(date), m_seller(seller), m_buyer(buyer), m_amount(amount), m_vat(vat){};
+               unsigned int amount, double vat ):m_date(date), m_seller(seller), m_buyer(buyer), m_amount(amount), m_vat(vat){
+        m_sellerF = formatName(m_seller);
+        m_buyerF = formatName(m_buyer);
+    };
 #pragma clang diagnostic pop
 
     /*date, seller, buyer, amount, vat -- přístupové metody ke čtení jednotlivých složek faktury.*/
@@ -92,6 +123,21 @@ class CInvoice{
     double vat () const{
         return m_vat;
     };
+
+    bool operator == ( const CInvoice& rhs ){
+        if (m_date.compare(rhs.m_date) != 0 ||
+            m_buyerF != rhs.m_buyerF ||
+            m_sellerF != rhs.m_sellerF ||
+            m_amount != rhs.m_amount ||
+            m_vat != rhs.m_vat)
+            return false;
+        else
+            return true;
+    };
+private:
+    friend string trimWhitespace(const string& str);
+    friend string removeWhitespace(const string &input, string &output);
+    friend string formatName ( string name );
 };
 
 struct CSortKey{
@@ -120,11 +166,34 @@ class CSortOpt{
     };
 };
 
-class CVATRegister
-{
+
+class CCounter{
+    unsigned long long int m_counter;
+public:
+    CCounter ():m_counter(0){};
+    unsigned long long int operator ()(){
+        m_counter ++;
+        return m_counter;
+    }
+};
+
+/* containers:
+ * set - companies
+ * maps have IDs of the invoices
+ * the coresponding invoices have the same key
+ * map - accepted invoices
+ * map - issued invoices
+ * set - solo invoices
+*/
+class CVATRegister{
+    CCounter m_IDCounter;
+    set <string> m_companies;
+    map <unsigned long long int, CInvoice> m_accepted;
+    map <unsigned long long int, CInvoice> m_issued;
+    set <unsigned long long int> m_soloInv;
   public:
     //inicializuje prázdnou instanci registru,
-    CVATRegister ();
+    CVATRegister () = default;
 
     /*metoda zavede zadanou firmu do registru. Předané jméno je oficiální název firmy, toto jméno bude používané v
      * exportech z registru. Návratovou hodnotou je indikátor úspěchu (true)/neúspěchu (false). Za neúspěch považujte,
@@ -135,13 +204,20 @@ class CVATRegister
 
     Tato pravidla jsou používána při zakládání nové firmy i vkládání / mazání faktur. Například názvy "My Company",
      "mY CoMpAnY", " My Company " a " mY CoMPAnY " jsou považované za jednu firmu, ale názvy "My Company" a "MyCompany" označují dvě rozdílné firmy.*/
-    bool registerCompany ( const string& name );
+    // edge cases: empty name, only whitespace name
+    bool registerCompany ( const string& name ){
+        string tmp;
+        tmp = formatName(name);
+        return m_companies.insert(tmp).second;
+    };
 
     /*metoda přidá fakturu do registru. Tuto metodu volá firma, která fakturu vydala. Návratovou hodnotou je příznak
      * úspěch (true)/neúspěch (false). Za chybu je považováno, pokud prodávající / kupující ve faktuře nejsou
      * registrované, prodávající a kupující je ta samá firma nebo pokud stejná faktura již byla pomocí addIssued
      * zadaná (dvě faktury se musí lišit alespoň v jednom z: prodávající/kupující/datum/částka/DPH).*/
-    bool addIssued ( const CInvoice& x );
+    bool addIssued ( const CInvoice& newInv ){
+
+    };
 
     /*    metoda přidá fakturu do registru, tuto metodu volá firma, která fakturu přijala (kupující).
      * Jinak se metoda chová stejně jako addIssued.*/
@@ -163,25 +239,43 @@ class CVATRegister
      * "oficiální" název, tedy ten název, který byl zadán při registraci firmy metodou registerCompany.
      * Tento oficiální název bude rovněž použit při řazení.*/
     list<CInvoice> unmatched ( const string& company, const CSortOpt& sortBy ) const;
+
+    void printCompanies(){
+        for(const auto& i : m_companies)
+            cout << i << endl;
+    }
+
   private:
-    // todo
+    friend string trimWhitespace(const string& str);
+
+    friend string removeWhitespace(const string &input, string &output);
+
+    friend string formatName ( string name );
 };
+
+
 
 #ifndef __PROGTEST__
 bool equalLists ( const list<CInvoice> & a, const list<CInvoice> & b )
 {
-  // todo
+  return true;
 }
 
-int main ( void )
+int main ()
 {
   CVATRegister r;
   assert ( r . registerCompany ( "first Company" ) );
   assert ( r . registerCompany ( "Second     Company" ) );
   assert ( r . registerCompany ( "ThirdCompany, Ltd." ) );
   assert ( r . registerCompany ( "Third Company, Ltd." ) );
+  assert ( r . registerCompany ( "" ) );
+  assert ( !r . registerCompany ( "           " ) );
+  assert ( !r . registerCompany ( "" ) );
+
+  r.printCompanies();
   assert ( !r . registerCompany ( "Third Company, Ltd." ) );
   assert ( !r . registerCompany ( " Third  Company,  Ltd.  " ) );
+  /*
   assert ( r . addIssued ( CInvoice ( CDate ( 2000, 1, 1 ), "First Company", "Second Company ", 100, 20 ) ) );
   assert ( r . addIssued ( CInvoice ( CDate ( 2000, 1, 2 ), "FirSt Company", "Second Company ", 200, 30 ) ) );
   assert ( r . addIssued ( CInvoice ( CDate ( 2000, 1, 1 ), "First Company", "Second Company ", 100, 30 ) ) );
@@ -297,6 +391,7 @@ int main ( void )
              CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 30.000000 ),
              CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 32.000000 )
            } ) );
+           */
   return EXIT_SUCCESS;
 }
 #endif /* __PROGTEST__ */
