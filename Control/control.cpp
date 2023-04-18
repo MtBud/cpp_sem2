@@ -55,9 +55,9 @@ class CDate{
     }
 
   private:
-    int16_t                  m_Year;
-    int8_t                   m_Month;
-    int8_t                   m_Day;
+    int16_t m_Year;
+    int8_t m_Month;
+    int8_t m_Day;
 };
 #endif /* __PROGTEST__ */
 
@@ -87,16 +87,18 @@ string formatName ( string name ){
     return name;
 }
 
+
 // reprezentuje jednu fakturu
 class CInvoice{
     CDate m_date;
     string m_seller;
     string m_buyer;
+    string m_sellerF;
+    string m_buyerF;
     unsigned int m_amount;
     double m_vat;
 public:
-    string m_sellerF;
-    string m_buyerF;
+
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "modernize-pass-by-value"
     /*    inicializace fakturu datem, jménem prodávající a kupující firmy, fakturovanou částkou a DPH.*/
@@ -140,16 +142,37 @@ private:
     friend string formatName ( string name );
 };
 
-struct CSortKey{
-    int m_key;
-    bool m_ascending;
-    CSortKey( int key, bool ascending ): m_key(key), m_ascending(ascending){};
+struct CInvoiceCompare{
+    bool operator()(const CInvoice& lhs, const CInvoice& rhs) const{
+        if (lhs.buyer() != rhs.buyer())
+            return lhs.buyer() < rhs.buyer();
+        if (lhs.seller() != rhs.seller())
+            return lhs.seller() < rhs.seller();
+        if (lhs.date().compare(rhs.date()) != 0){
+            if(lhs.date().compare(rhs.date()) > 0)
+                return false;
+            else
+                return true;
+        }
+        if (lhs.amount() != rhs.amount())
+            return lhs.amount() < rhs.amount();
+        if (lhs.vat() != rhs.vat())
+            return lhs.vat() < rhs.vat();
+        return false;
+    }
 };
+
 /*Třída CSortOpt určuje kritéria pro řazení. Pro řazení lze použít všechny složky faktury. Pokud například vytvoříme instanci:
  * CSortOpt () . addKey ( CSortOpt::BY_AMOUNT, true ) . addKey ( CSortOpt::BY_SELLER, false )
  * pak se řadí podle fakturované částky vzestupně (první řadicí kritérium) a pro stejné hodnoty fakturované částky
  * se použije řazení podle jména prodávajícího sestupně (druhé řadicí kritérium). Pokud by ani takto nebylo pořadí
  * jednoznačně určené, použije se jako řadicí kritérium pořadí zavedení faktury do registru. Rozhraní třídy CSortOpt je:*/
+struct CSortKey{
+    int m_key;
+    bool m_ascending;
+    CSortKey( int key, bool ascending ): m_key(key), m_ascending(ascending){};
+};
+
 class CSortOpt{
     vector <CSortKey> m_keys;
   public:
@@ -167,30 +190,41 @@ class CSortOpt{
 };
 
 
-class CCounter{
-    unsigned long long int m_counter;
+class CSoloInv{
+    string m_name;
+    set <CInvoice, CInvoiceCompare> m_solos;
 public:
-    CCounter ():m_counter(0){};
-    unsigned long long int operator ()(){
-        m_counter ++;
-        return m_counter;
+    explicit CSoloInv(string& name):m_name(name){};
+
+    void addInvoice(const CInvoice& newInv){
+        m_solos.insert(newInv);
+    }
+
+    string name () const{
+        return m_name;
+    }
+};
+
+struct CSoloCompare{
+    bool operator()(const CSoloInv& lhs, const CSoloInv& rhs) const{
+        if (lhs.name() != rhs.name())
+            return lhs.name() < rhs.name();
+        return false;
     }
 };
 
 /* containers:
  * set - companies
- * maps have IDs of the invoices
- * the coresponding invoices have the same key
- * map - accepted invoices
- * map - issued invoices
- * set - solo invoices
+ * set - all accepted invoices -> sorted for easy serach
+ * set - all issued   invoices -> sorted for easy serach
+ * set - contains a class with all solo invoices for given company
+ *          that are also sorted in a set
 */
 class CVATRegister{
-    CCounter m_IDCounter;
-    set <string> m_companies;
-    map <unsigned long long int, CInvoice> m_accepted;
-    map <unsigned long long int, CInvoice> m_issued;
-    set <unsigned long long int> m_soloInv;
+    set <CSoloInv, CSoloCompare> m_companies;
+    set <CInvoice, CInvoiceCompare> m_accepted;
+    set <CInvoice, CInvoiceCompare> m_issued;
+
   public:
     //inicializuje prázdnou instanci registru,
     CVATRegister () = default;
@@ -208,16 +242,15 @@ class CVATRegister{
     bool registerCompany ( const string& name ){
         string tmp;
         tmp = formatName(name);
-        return m_companies.insert(tmp).second;
+        CSoloInv newCompany(tmp);
+        return m_companies.insert(newCompany).second;
     };
 
     /*metoda přidá fakturu do registru. Tuto metodu volá firma, která fakturu vydala. Návratovou hodnotou je příznak
      * úspěch (true)/neúspěch (false). Za chybu je považováno, pokud prodávající / kupující ve faktuře nejsou
      * registrované, prodávající a kupující je ta samá firma nebo pokud stejná faktura již byla pomocí addIssued
      * zadaná (dvě faktury se musí lišit alespoň v jednom z: prodávající/kupující/datum/částka/DPH).*/
-    bool addIssued ( const CInvoice& newInv ){
-
-    };
+    bool addIssued ( const CInvoice& newInv );
 
     /*    metoda přidá fakturu do registru, tuto metodu volá firma, která fakturu přijala (kupující).
      * Jinak se metoda chová stejně jako addIssued.*/
@@ -242,14 +275,12 @@ class CVATRegister{
 
     void printCompanies(){
         for(const auto& i : m_companies)
-            cout << i << endl;
+            cout << i.name() << endl;
     }
 
   private:
     friend string trimWhitespace(const string& str);
-
     friend string removeWhitespace(const string &input, string &output);
-
     friend string formatName ( string name );
 };
 
