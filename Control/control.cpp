@@ -199,13 +199,13 @@ struct CSortKey{
 };
 
 class CSortOpt{
-    vector <CSortKey> m_keys;
   public:
     static const int BY_DATE = 0;
     static const int BY_BUYER = 1;
     static const int BY_SELLER = 2;
     static const int BY_AMOUNT = 3;
     static const int BY_VAT = 4;
+    vector <CSortKey> m_keys;
     CSortOpt () = default;
     CSortOpt& addKey ( int key, bool ascending = true ){
         CSortKey newKey(key, ascending);
@@ -214,6 +214,83 @@ class CSortOpt{
     };
 };
 
+struct CSortCompare{
+    CSortOpt m_rules;
+    explicit CSortCompare( CSortOpt  rules ):m_rules(std::move(rules)){};
+
+    bool operator()(const CInvoice& lhs, const CInvoice& rhs) const{
+        return compare(lhs, rhs);
+    }
+
+    bool compare(const CInvoice& lhs, const CInvoice& rhs) const{
+        static int level = 0;
+        if(level == m_rules.m_keys.size())
+            return lhs.m_ID < rhs.m_ID;
+        switch (m_rules.m_keys[level].m_key){
+            case 0:
+                if (lhs.date().compare(rhs.date()) == 0){
+                    level ++;
+                    return compare(lhs, rhs);
+                }
+                else
+                    return checkAsc(lhs.date().compare(rhs.date()) < 0, m_rules.m_keys[level].m_ascending);
+
+            case 1:
+                if (lhs.buyer() == rhs.buyer()){
+                    level ++;
+                    return compare(lhs, rhs);
+                }
+                else
+                    return checkAsc(lhs.buyer() < rhs.buyer(), m_rules.m_keys[level].m_ascending);
+
+            case 2:
+                if (lhs.seller() == rhs.seller()){
+                    level ++;
+                    return compare(lhs, rhs);
+                }
+                else
+                    return checkAsc(lhs.seller() < rhs.seller(), m_rules.m_keys[level].m_ascending);
+
+            case 3:
+                if (lhs.amount() == rhs.amount()){
+                    level ++;
+                    return compare(lhs, rhs);
+                }
+                else
+                    return checkAsc(lhs.amount() < rhs.amount(), m_rules.m_keys[level].m_ascending);
+
+            case 4:
+                if (lhs.vat() == rhs.vat()){
+                    level ++;
+                    return compare(lhs, rhs);
+                }
+                else
+                    return checkAsc(lhs.vat() < rhs.vat(), m_rules.m_keys[level].m_ascending);
+            default:
+                return true;
+        }
+    }
+
+
+    // function exists for easier reading and debugging
+    static bool checkAsc(const bool result, const bool asc) {
+        if ( result == asc)
+            return true;
+        else
+            return false;
+    }
+
+    /*
+    template <typename T> bool comparisonCase( T lhs, T rhs , int& level){
+        if (lhs.buyer() == rhs.buyer()){
+            level ++;
+            return compare(lhs, rhs);
+        }
+        else
+            return checkAsc(lhs.buyer() < rhs.buyer(), m_rules.m_keys[level].m_ascending);
+    }*/
+
+};
 
 class CCounter{
     unsigned long long int m_counter;
@@ -323,7 +400,14 @@ class CVATRegister{
      * Tento oficiální název bude rovněž použit při řazení.*/
     list<CInvoice> unmatched ( const string& company, const CSortOpt& sortBy ) const{
         string name = formatName(company);
-        list<CInvoice>
+        list<CInvoice> outList;
+        // copy invoices into the list
+        for( const auto& i : m_companies.at(name) )
+            outList.push_back(m_solos.at(i));
+
+        CSortCompare comparator(sortBy);
+        outList.sort(comparator);
+        return outList;
     };
 
     void printCompanies() const{
@@ -337,7 +421,7 @@ class CVATRegister{
     }
 
   private:
-    bool checkInvoiceValidity( const CInvoice& newInv, set<CInvoice, CInvoiceCompare>& invRegister) {
+    bool checkInvoiceValidity( const CInvoice& newInv, set<CInvoice, CInvoiceCompare>& invRegister) const{
         if ( newInv.buyerF() == newInv.sellerF() )
             return false;
         if ( m_companies.find(newInv.buyerF()) == m_companies.end() || m_companies.find(newInv.sellerF()) == m_companies.end() )
@@ -368,17 +452,16 @@ class CVATRegister{
             return false;
 
         CInvoice newCopy = newInv;
+        newCopy.m_ID = m_IDmaker();
         newCopy.flip();
         // check if secondary has the complementary invoice
         auto compInvoice = secondary.find(newCopy);
         if ( compInvoice == secondary.end() ){
             // if not, add solo invoice to m_solos and add key to m_companies
             newCopy.flip();
-            newCopy.m_ID = m_IDmaker();
             addNewSolo( newCopy );
         }
         else{
-            newCopy.m_ID = compInvoice->m_ID;
             removeSolo(newCopy);
             newCopy.flip();
         }
@@ -461,7 +544,7 @@ int main ()
     assert ( !r . addIssued ( CInvoice ( CDate ( 2000, 1, 4 ), "Another Company", "First   Company", 200, 30 ) ) );
     r.printCompanies();
     r.printSolo();
-    /*
+
     assert ( equalLists ( r . unmatched ( "First Company", CSortOpt () . addKey ( CSortOpt::BY_SELLER, true ) . addKey ( CSortOpt::BY_BUYER, false ) . addKey ( CSortOpt::BY_DATE, false ) ),
              list<CInvoice>
              {
@@ -567,7 +650,7 @@ int main ()
                CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 30.000000 ),
                CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 32.000000 )
              } ) );
-             */
+
   return EXIT_SUCCESS;
 }
 #endif /* __PROGTEST__ */
