@@ -305,12 +305,16 @@ class CVATRegister{
     /*metoda odebere fakturu z registru. Tuto metodu volá firma, která fakturu vydala a dříve zaregistrovala.
      * Návratovou hodnotou je příznak úspěch (true)/neúspěch (false). Za chybu je považováno, pokud identická
      * faktura nebyla dříve registrovaná metodou addIssued.*/
-    bool delIssued ( const CInvoice& newInv );
+    bool delIssued ( const CInvoice& newInv ){
+        return removeInvoice(m_issued, m_accepted, newInv);
+    };
 
     /*metoda odebere fakturu z registru. Tuto metodu volá firma, která fakturu přijala a dříve zaregistrovala.
      * Návratovou hodnotou je příznak úspěch (true)/neúspěch (false). Za chybu je považováno, pokud identická
      * faktura nebyla dříve registrovaná metodou addAccepted.*/
-    bool delAccepted ( const CInvoice& newInv );
+    bool delAccepted ( const CInvoice& newInv ){
+        return removeInvoice(m_accepted, m_issued, newInv);
+    };
 
     /*metoda nalezne všechny faktury, které se týkají zadané firmy company a nebyly spárované (tedy byly registrované
      * pouze pomocí addIssued nebo pouze pomocí addAccepted). Metoda vrátí seznam těchto faktur, faktury budou
@@ -359,13 +363,13 @@ class CVATRegister{
         keys.erase(remInv.m_ID);
     }
 
-    bool addInvoice( set <CInvoice, CInvoiceCompare>& primary, set <CInvoice, CInvoiceCompare>& secondary, const CInvoice& newInv){
+    bool addInvoice( set <CInvoice, CInvoiceCompare>& primary, set <CInvoice, CInvoiceCompare>& secondary, const CInvoice& newInv ){
         if ( ! checkInvoiceValidity(newInv, primary) )
             return false;
 
         CInvoice newCopy = newInv;
         newCopy.flip();
-        // check if m_accept has the complementary invoice
+        // check if secondary has the complementary invoice
         auto compInvoice = secondary.find(newCopy);
         if ( compInvoice == secondary.end() ){
             // if not, add solo invoice to m_solos and add key to m_companies
@@ -379,6 +383,26 @@ class CVATRegister{
             newCopy.flip();
         }
         primary.insert(newCopy);
+        return true;
+    }
+
+    bool removeInvoice( set <CInvoice, CInvoiceCompare>& primary, set <CInvoice, CInvoiceCompare>& secondary, const CInvoice& newInv ){
+        if ( primary.find(newInv) == primary.end() )
+            return false;
+
+        CInvoice newCopy = newInv;
+        newCopy.flip();
+        // check if secondary has the complementary invoice
+        if ( secondary.find(newCopy) == secondary.end() ){
+            // if not, add solo invoice to m_solos and add key to m_companies
+            newCopy.flip();
+            removeSolo(newCopy);
+        }
+        else{
+            addNewSolo( newCopy );
+            newCopy.flip();
+        }
+        primary.erase(newCopy);
         return true;
     }
 
