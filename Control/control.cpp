@@ -97,8 +97,6 @@ class CInvoice{
     double m_vat;
 public:
     unsigned long long int m_ID;
-    string m_sellerOf;
-    string m_buyerOf;
     /*    inicializace fakturu datem, jménem prodávající a kupující firmy, fakturovanou částkou a DPH.*/
     CInvoice ( const CDate& date, string  seller, string  buyer,
                unsigned int amount, double vat ):m_date(date), m_seller(std::move(seller)), m_buyer(std::move(buyer)), m_amount(amount), m_vat(vat), m_ID(0){
@@ -216,6 +214,12 @@ class CSortOpt{
     CSortOpt () = default;
     CSortOpt& addKey ( int key, bool ascending = true ){
         CSortKey newKey(key, ascending);
+        if ( m_keys.size() == 5)
+            return *this;
+        for (auto & i : m_keys){
+            if(i.m_key == newKey.m_key)
+                return *this;
+        }
         m_keys.push_back(newKey);
         return *this;
     };
@@ -357,11 +361,11 @@ struct CCompanyCompare{
 */
 class CVATRegister{
     CCounter m_IDmaker;
-    map <string, string> m_companyNames;
-    map <string, set<unsigned long long int>> m_companies;  // name of company mapped to set of IDs of solo Invoices
+    unordered_map <string, string> m_companyNames;          // original names of companies mapped to the foormated versions
+    unordered_map <string, unordered_set<unsigned long long>> m_companies;  // name of company mapped to set of IDs of solo Invoices
     set <CInvoice, CInvoiceCompare> m_accepted;             // set of all accepted invoices
     set <CInvoice, CInvoiceCompare> m_issued;               // set of all issued invoices
-    map <unsigned long long int, CInvoice> m_solos;         // ID mapped to its corresponding solo invoice
+    unordered_map <unsigned long long, CInvoice> m_solos;         // ID mapped to its corresponding solo invoice
 
   public:
     //inicializuje prázdnou instanci registru,
@@ -380,7 +384,7 @@ class CVATRegister{
     bool registerCompany ( const string& name ){
         string tmp;
         tmp = formatName(name);
-        set<unsigned long long int> keys;
+        unordered_set<unsigned long long int> keys;
         return m_companies.insert(make_pair(tmp, keys)).second && m_companyNames.insert(make_pair(tmp, name)).second;
     };
 
@@ -430,15 +434,17 @@ class CVATRegister{
         if (m_companies.find(name) == m_companies.end())
             return outList;
 
+        CSortCompare comparator(sortBy);
+
         for( const auto& i : m_companies.at(name) ){
-            outList.push_back(m_solos.at(i));
+            auto iter = lower_bound(outList.begin(), outList.end(), m_solos.at(i),comparator);
+            outList.insert(iter, m_solos.at(i));
         }
 
-        CSortCompare comparator(sortBy);
-        outList.sort(comparator);
+        /*
         for(auto const& i: outList)
             i.print();
-        cout << endl;
+        cout << endl;*/
         return outList;
     };
 
@@ -462,24 +468,22 @@ class CVATRegister{
             return false;
         if ( m_companies.find(newInv.buyerF()) == m_companies.end() || m_companies.find(newInv.sellerF()) == m_companies.end() )
             return false;
-        if ( invRegister.find(newInv) != invRegister.end() )
-            return false;
         return true;
     }
 
     void addNewSolo( CInvoice& newInv, unsigned long long ID){
         m_solos.insert( make_pair(ID, newInv));
-        set<unsigned long long>& keys = m_companies[newInv.buyerF()];
+        unordered_set<unsigned long long>& keys = m_companies[newInv.buyerF()];
         keys.insert(ID);
-        set<unsigned long long>& keys2 = m_companies[newInv.sellerF()];
+        unordered_set<unsigned long long>& keys2 = m_companies[newInv.sellerF()];
         keys2.insert(ID);
     }
 
     void removeSolo( CInvoice& remInv , unsigned long long ID){
         m_solos.erase(ID);
-        set<unsigned long long>& keys = m_companies[remInv.buyerF()];
+        unordered_set<unsigned long long>& keys = m_companies[remInv.buyerF()];
         keys.erase(ID);
-        set<unsigned long long>& keys2 = m_companies[remInv.sellerF()];
+        unordered_set<unsigned long long>& keys2 = m_companies[remInv.sellerF()];
         keys2.erase(ID);
     }
 
@@ -491,19 +495,18 @@ class CVATRegister{
         newCopy.buyerSet(m_companyNames[newCopy.buyerF()]);
         newCopy.sellerSet(m_companyNames[newCopy.sellerF()]);
         newCopy.m_ID = m_IDmaker();
-        //newCopy.flip();
         // check if secondary has the complementary invoice
+        if( ! primary.insert(newCopy).second){
+            return false;
+        }
         auto compInvoice = secondary.find(newCopy);
         if ( compInvoice == secondary.end() ){
             // if not, add solo invoice to m_solos and add key to m_companies
-            //newCopy.flip();
             addNewSolo( newCopy , newCopy.m_ID);
         }
         else{
             removeSolo(newCopy, compInvoice->m_ID);
-            //newCopy.flip();
         }
-        primary.insert(newCopy);
         return true;
     }
 
@@ -511,25 +514,22 @@ class CVATRegister{
         CInvoice newCopy = newInv;
         newCopy.buyerSet(m_companyNames[newCopy.buyerF()]);
         newCopy.sellerSet(m_companyNames[newCopy.sellerF()]);
+
+        // find the corresponding invoice
         auto iter = primary.find(newInv);
         if ( iter == primary.end() )
             return false;
-        else
-            newCopy.m_ID = iter->m_ID;
 
-        //newCopy.flip();
         // check if secondary has the complementary invoice
         auto compInvoice = secondary.find(newCopy);
         if ( compInvoice == secondary.end() ){
             // if not, add solo invoice to m_solos and add key to m_companies
-            //newCopy.flip();
-            removeSolo(newCopy, newCopy.m_ID);
+            removeSolo(newCopy, iter->m_ID);
         }
         else{
             addNewSolo( newCopy, compInvoice->m_ID );
-            //newCopy.flip();
         }
-        primary.erase(newCopy);
+        primary.erase(iter);
         return true;
     }
 
@@ -715,7 +715,7 @@ int main ()
                CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 32.000000 )
              } ) );
     assert ( r . delIssued ( CInvoice ( CDate ( 2000, 1, 1 ), "First Company", " Third  Company,  Ltd.   ", 200, 30 ) ) );
-    assert ( equalLists ( r . unmatched ( "First Company", CSortOpt () . addKey ( CSortOpt::BY_SELLER, true ) . addKey ( CSortOpt::BY_BUYER, true ) . addKey ( CSortOpt::BY_DATE, true ) ),
+    assert ( equalLists ( r . unmatched ( "First Company", CSortOpt () . addKey ( CSortOpt::BY_SELLER, true ) . addKey ( CSortOpt::BY_BUYER, true ) . addKey ( CSortOpt::BY_DATE, true ). addKey ( CSortOpt::BY_BUYER, true ) . addKey ( CSortOpt::BY_DATE, true ) ),
              list<CInvoice>
              {
                CInvoice ( CDate ( 2000, 1, 1 ), "first Company", "Second     Company", 100, 20.000000 ),
@@ -725,6 +725,7 @@ int main ()
                CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 30.000000 ),
                CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 32.000000 )
              } ) );
+
 
   return EXIT_SUCCESS;
 }
