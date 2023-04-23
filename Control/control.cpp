@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <utility>
 #include <vector>
 #include <map>
 #include <list>
@@ -21,10 +22,7 @@ using namespace std;
 
 class CDate{
   public:
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cppcoreguidelines-narrowing-conversions"
     CDate( int y, int m, int d ): m_Year (y), m_Month (m), m_Day (d){}
-#pragma clang diagnostic pop
 
     int compare ( const CDate& x ) const{
       if ( m_Year != x . m_Year )
@@ -99,15 +97,14 @@ class CInvoice{
     double m_vat;
 public:
     unsigned long long int m_ID;
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-pass-by-value"
+    string m_sellerOf;
+    string m_buyerOf;
     /*    inicializace fakturu datem, jménem prodávající a kupující firmy, fakturovanou částkou a DPH.*/
-    CInvoice ( const CDate& date, const string& seller, const string& buyer,
-               unsigned int amount, double vat ):m_date(date), m_seller(seller), m_buyer(buyer), m_amount(amount), m_vat(vat), m_ID(0){
+    CInvoice ( const CDate& date, string  seller, string  buyer,
+               unsigned int amount, double vat ):m_date(date), m_seller(std::move(seller)), m_buyer(std::move(buyer)), m_amount(amount), m_vat(vat), m_ID(0){
         m_sellerF = formatName(m_seller);
         m_buyerF = formatName(m_buyer);
     };
-#pragma clang diagnostic pop
 
     /*date, seller, buyer, amount, vat -- přístupové metody ke čtení jednotlivých složek faktury.*/
     CDate date () const{
@@ -119,6 +116,13 @@ public:
     string seller () const{
         return m_seller;
     };
+    void buyerSet ( string newBuyer){
+        m_buyer = std::move(newBuyer);
+    }
+    void sellerSet ( string newSeller){
+        m_seller = std::move(newSeller);
+    }
+
     unsigned int amount () const{
         return m_amount;
     };
@@ -132,6 +136,7 @@ public:
         return m_sellerF;
     };
 
+    /*
     void flip(){
         string tmp;
         tmp = m_buyer;
@@ -141,17 +146,18 @@ public:
         m_buyerF = m_sellerF;
         m_sellerF = tmp;
     }
+     */
 
     void print() const{
         cout    << "ID: " << m_ID
-                << " Date: " << m_date
-                << " Buyer: " << m_buyer
-                << " Seller: " << m_seller
-                << " Amount: " << m_amount
-                << " VAT: " << m_vat<< endl;
+                << "\tDate: " << m_date
+                << "\tSeller: " << m_seller
+                << "\tBuyer: " << m_buyer
+                << "\tAmount: " << m_amount
+                << "\tVAT: " << m_vat<< endl;
     }
 
-    bool operator == ( const CInvoice& rhs ){
+    bool operator == ( const CInvoice& rhs ) const{
         if (m_date.compare(rhs.m_date) != 0 ||
             m_buyerF != rhs.m_buyerF ||
             m_sellerF != rhs.m_sellerF ||
@@ -173,6 +179,7 @@ struct CInvoiceCompare{
             return lhs.buyerF() < rhs.buyerF();
         if (lhs.sellerF() != rhs.sellerF())
             return lhs.sellerF() < rhs.sellerF();
+
         if (lhs.date().compare(rhs.date()) != 0){
             if(lhs.date().compare(rhs.date()) > 0)
                 return false;
@@ -223,49 +230,66 @@ struct CSortCompare{
     }
 
     bool compare(const CInvoice& lhs, const CInvoice& rhs) const{
-        static int level = 0;
-        if(level == m_rules.m_keys.size())
+        static unsigned int level = 0;
+        if(level == m_rules.m_keys.size()){
+            level = 0;
             return lhs.m_ID < rhs.m_ID;
+        }
         switch (m_rules.m_keys[level].m_key){
             case 0:
                 if (lhs.date().compare(rhs.date()) == 0){
                     level ++;
                     return compare(lhs, rhs);
                 }
-                else
-                    return checkAsc(lhs.date().compare(rhs.date()) < 0, m_rules.m_keys[level].m_ascending);
+                else{
+                    bool result = checkAsc(lhs.date().compare(rhs.date()) < 0, m_rules.m_keys[level].m_ascending);
+                    level = 0;
+                    return result;
+                }
 
             case 1:
-                if (lhs.buyer() == rhs.buyer()){
+                if (lhs.buyerF() == rhs.buyerF()){
                     level ++;
                     return compare(lhs, rhs);
                 }
-                else
-                    return checkAsc(lhs.buyer() < rhs.buyer(), m_rules.m_keys[level].m_ascending);
+                else{
+                    bool result = checkAsc(lhs.buyerF() < rhs.buyerF(), m_rules.m_keys[level].m_ascending);
+                    level = 0;
+                    return result;
+                }
 
             case 2:
-                if (lhs.seller() == rhs.seller()){
+                if (lhs.sellerF() == rhs.sellerF()){
                     level ++;
                     return compare(lhs, rhs);
                 }
-                else
-                    return checkAsc(lhs.seller() < rhs.seller(), m_rules.m_keys[level].m_ascending);
+                else{
+                    bool result = checkAsc(lhs.sellerF() < rhs.sellerF(), m_rules.m_keys[level].m_ascending);
+                    level = 0;
+                    return result;
+                }
 
             case 3:
                 if (lhs.amount() == rhs.amount()){
                     level ++;
                     return compare(lhs, rhs);
                 }
-                else
-                    return checkAsc(lhs.amount() < rhs.amount(), m_rules.m_keys[level].m_ascending);
+                else{
+                    bool result = checkAsc(lhs.amount() < rhs.amount(), m_rules.m_keys[level].m_ascending);
+                    level = 0;
+                    return result;
+                }
 
             case 4:
                 if (lhs.vat() == rhs.vat()){
                     level ++;
                     return compare(lhs, rhs);
                 }
-                else
-                    return checkAsc(lhs.vat() < rhs.vat(), m_rules.m_keys[level].m_ascending);
+                else{
+                    bool result = checkAsc(lhs.vat() < rhs.vat(), m_rules.m_keys[level].m_ascending);
+                    level = 0;
+                    return result;
+                }
             default:
                 return true;
         }
@@ -333,6 +357,7 @@ struct CCompanyCompare{
 */
 class CVATRegister{
     CCounter m_IDmaker;
+    map <string, string> m_companyNames;
     map <string, set<unsigned long long int>> m_companies;  // name of company mapped to set of IDs of solo Invoices
     set <CInvoice, CInvoiceCompare> m_accepted;             // set of all accepted invoices
     set <CInvoice, CInvoiceCompare> m_issued;               // set of all issued invoices
@@ -356,7 +381,7 @@ class CVATRegister{
         string tmp;
         tmp = formatName(name);
         set<unsigned long long int> keys;
-        return m_companies.insert(make_pair(tmp, keys)).second;
+        return m_companies.insert(make_pair(tmp, keys)).second && m_companyNames.insert(make_pair(tmp, name)).second;
     };
 
     /*metoda přidá fakturu do registru. Tuto metodu volá firma, která fakturu vydala. Návratovou hodnotou je příznak
@@ -402,22 +427,33 @@ class CVATRegister{
         string name = formatName(company);
         list<CInvoice> outList;
         // copy invoices into the list
-        for( const auto& i : m_companies.at(name) )
+        if (m_companies.find(name) == m_companies.end())
+            return outList;
+
+        for( const auto& i : m_companies.at(name) ){
             outList.push_back(m_solos.at(i));
+        }
 
         CSortCompare comparator(sortBy);
         outList.sort(comparator);
+        for(auto const& i: outList)
+            i.print();
+        cout << endl;
         return outList;
     };
 
     void printCompanies() const{
+        cout << "PRINT COMPANIES:" << endl;
         for(const auto& i : m_companies)
             cout << i.first << endl;
+        cout << endl;
     }
 
     void printSolo() const{
+        cout << "PRINT SOLO:" << endl;
         for(const auto& i : m_solos)
             i.second.print();
+        cout << endl;
     }
 
   private:
@@ -431,20 +467,20 @@ class CVATRegister{
         return true;
     }
 
-    void addNewSolo( CInvoice& newInv){
-        m_solos.insert( make_pair(newInv.m_ID, newInv));
-        auto keys = m_companies[newInv.buyerF()];
-        keys.insert(newInv.m_ID);
-        keys = m_companies[newInv.sellerF()];
-        keys.insert(newInv.m_ID);
+    void addNewSolo( CInvoice& newInv, unsigned long long ID){
+        m_solos.insert( make_pair(ID, newInv));
+        set<unsigned long long>& keys = m_companies[newInv.buyerF()];
+        keys.insert(ID);
+        set<unsigned long long>& keys2 = m_companies[newInv.sellerF()];
+        keys2.insert(ID);
     }
 
-    void removeSolo( CInvoice& remInv ){
-        m_solos.erase(remInv.m_ID);
-        auto keys = m_companies[remInv.buyerF()];
-        keys.erase(remInv.m_ID);
-        keys = m_companies[remInv.sellerF()];
-        keys.erase(remInv.m_ID);
+    void removeSolo( CInvoice& remInv , unsigned long long ID){
+        m_solos.erase(ID);
+        set<unsigned long long>& keys = m_companies[remInv.buyerF()];
+        keys.erase(ID);
+        set<unsigned long long>& keys2 = m_companies[remInv.sellerF()];
+        keys2.erase(ID);
     }
 
     bool addInvoice( set <CInvoice, CInvoiceCompare>& primary, set <CInvoice, CInvoiceCompare>& secondary, const CInvoice& newInv ){
@@ -452,38 +488,46 @@ class CVATRegister{
             return false;
 
         CInvoice newCopy = newInv;
+        newCopy.buyerSet(m_companyNames[newCopy.buyerF()]);
+        newCopy.sellerSet(m_companyNames[newCopy.sellerF()]);
         newCopy.m_ID = m_IDmaker();
-        newCopy.flip();
+        //newCopy.flip();
         // check if secondary has the complementary invoice
         auto compInvoice = secondary.find(newCopy);
         if ( compInvoice == secondary.end() ){
             // if not, add solo invoice to m_solos and add key to m_companies
-            newCopy.flip();
-            addNewSolo( newCopy );
+            //newCopy.flip();
+            addNewSolo( newCopy , newCopy.m_ID);
         }
         else{
-            removeSolo(newCopy);
-            newCopy.flip();
+            removeSolo(newCopy, compInvoice->m_ID);
+            //newCopy.flip();
         }
         primary.insert(newCopy);
         return true;
     }
 
     bool removeInvoice( set <CInvoice, CInvoiceCompare>& primary, set <CInvoice, CInvoiceCompare>& secondary, const CInvoice& newInv ){
-        if ( primary.find(newInv) == primary.end() )
-            return false;
-
         CInvoice newCopy = newInv;
-        newCopy.flip();
+        newCopy.buyerSet(m_companyNames[newCopy.buyerF()]);
+        newCopy.sellerSet(m_companyNames[newCopy.sellerF()]);
+        auto iter = primary.find(newInv);
+        if ( iter == primary.end() )
+            return false;
+        else
+            newCopy.m_ID = iter->m_ID;
+
+        //newCopy.flip();
         // check if secondary has the complementary invoice
-        if ( secondary.find(newCopy) == secondary.end() ){
+        auto compInvoice = secondary.find(newCopy);
+        if ( compInvoice == secondary.end() ){
             // if not, add solo invoice to m_solos and add key to m_companies
-            newCopy.flip();
-            removeSolo(newCopy);
+            //newCopy.flip();
+            removeSolo(newCopy, newCopy.m_ID);
         }
         else{
-            addNewSolo( newCopy );
-            newCopy.flip();
+            addNewSolo( newCopy, compInvoice->m_ID );
+            //newCopy.flip();
         }
         primary.erase(newCopy);
         return true;
@@ -500,8 +544,26 @@ class CVATRegister{
 bool equalLists ( const list<CInvoice> & a, const list<CInvoice> & b ){
     auto iterA = a.begin();
     auto iterB = b.begin();
-    for( int i = 0; i < a.size(); i ++){
-        if( ! (iterA == iterB) )
+    if ( a.size() != b.size()){
+        cout << "ERROR: DIFFERENT SIZE" << endl
+            << "A SIZE: " << a.size() << endl
+                << "B SIZE: " << b.size() <<endl;
+        return false;
+    }
+    for( size_t i = 0; i < a.size(); i ++){
+        //cout << "iteration " << i << endl;
+        //iterA->print();
+        //iterB->print();
+        //cout << endl;
+        if(iterA->buyer() != iterB->buyer())
+            return false;
+        if(iterA->seller() != iterB->seller())
+            return false;
+        if(iterA->amount() != iterB->amount())
+            return false;
+        if(iterA->vat() != iterB->vat())
+            return false;
+        if(iterA->date().compare(iterB->date()) != 0)
             return false;
         iterA ++;
         iterB ++;
@@ -531,10 +593,13 @@ int main ()
     assert ( r . addIssued ( CInvoice ( CDate ( 2000, 1, 1 ), "First Company", " Third  Company,  Ltd.   ", 200, 30 ) ) );
 
     assert ( r . addIssued ( CInvoice ( CDate ( 2000, 1, 1 ), "", "Second Company ", 100, 20 ) ) );
-    assert ( r . addAccepted( CInvoice ( CDate ( 2000, 1, 1 ), "Second Company ", " ", 100, 20 ) ) );
+    assert ( r . addAccepted( CInvoice ( CDate ( 2000, 1, 1 ), " ", "Second Company ", 100, 20 ) ) );
 
     assert ( r . addIssued ( CInvoice ( CDate ( 2000, 1, 1 ), "A", "Second Company ", 100, 20 ) ) );
-    assert ( r . addAccepted( CInvoice ( CDate ( 2000, 1, 1 ), "Second Company ", "A", 100, 20 ) ) );
+    assert ( r . addAccepted( CInvoice ( CDate ( 2000, 1, 1 ), "A", "Second Company ", 100, 20 ) ) );
+    assert ( r . delIssued( CInvoice ( CDate ( 2000, 1, 1 ), "A", "Second Company ", 100, 20 ) ) );
+    assert ( r . delAccepted( CInvoice ( CDate ( 2000, 1, 1 ), "A", "Second Company ", 100, 20 ) ) );
+
 
     assert ( r . addIssued ( CInvoice ( CDate ( 2000, 1, 1 ), "Second Company ", "First Company", 300, 30 ) ) );
     assert ( r . addIssued ( CInvoice ( CDate ( 2000, 1, 1 ), "Third  Company,  Ltd.", "  Second    COMPANY ", 400, 34 ) ) );
@@ -543,7 +608,11 @@ int main ()
     assert ( !r . addIssued ( CInvoice ( CDate ( 2000, 1, 4 ), "First Company", "First   Company", 200, 30 ) ) );
     assert ( !r . addIssued ( CInvoice ( CDate ( 2000, 1, 4 ), "Another Company", "First   Company", 200, 30 ) ) );
     r.printCompanies();
+    cout << endl;
     r.printSolo();
+    cout << endl;
+
+    assert ( CInvoice ( CDate ( 2000, 1, 1 ), "first Company", "Third Company, Ltd.", 200, 30.000000 ) == CInvoice ( CDate ( 2000, 1, 1 ), "first Company", "Third Company, Ltd.", 200, 30.000000 ));
 
     assert ( equalLists ( r . unmatched ( "First Company", CSortOpt () . addKey ( CSortOpt::BY_SELLER, true ) . addKey ( CSortOpt::BY_BUYER, false ) . addKey ( CSortOpt::BY_DATE, false ) ),
              list<CInvoice>
@@ -585,6 +654,9 @@ int main ()
                CInvoice ( CDate ( 2000, 1, 1 ), "first Company", "Third Company, Ltd.", 200, 30.000000 ),
                CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 30.000000 )
              } ) );
+
+    r.printCompanies();
+    r.printSolo();
     assert ( equalLists ( r . unmatched ( "second company", CSortOpt () . addKey ( CSortOpt::BY_DATE, false ) ),
              list<CInvoice>
              {
@@ -602,6 +674,9 @@ int main ()
     assert ( r . addAccepted ( CInvoice ( CDate ( 2000, 1, 2 ), "First Company", "Second Company ", 200, 30 ) ) );
     assert ( r . addAccepted ( CInvoice ( CDate ( 2000, 1, 1 ), "First Company", " Third  Company,  Ltd.   ", 200, 30 ) ) );
     assert ( r . addAccepted ( CInvoice ( CDate ( 2000, 1, 1 ), "Second company ", "First Company", 300, 32 ) ) );
+
+    r.printCompanies();
+    r.printSolo();
     assert ( equalLists ( r . unmatched ( "First Company", CSortOpt () . addKey ( CSortOpt::BY_SELLER, true ) . addKey ( CSortOpt::BY_BUYER, true ) . addKey ( CSortOpt::BY_DATE, true ) ),
              list<CInvoice>
              {
