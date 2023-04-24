@@ -23,72 +23,49 @@
 #include <type_traits>
 using namespace std;
 
-class CRect 
-{
-  public:
-                             CRect                         ( double            x,
-                                                             double            y,
-                                                             double            w,
-                                                             double            h )
-      : m_X ( x ),
-        m_Y ( y ),
-        m_W ( w ),
-        m_H ( h )
-    {
+class CRect{
+public:
+    CRect ( double x, double y, double w, double h ):
+        m_X ( x ), m_Y ( y ), m_W ( w ), m_H ( h ){}
+
+    friend ostream & operator << ( ostream & os, const CRect& x ){
+        return os << '(' << x . m_X << ',' << x . m_Y << ',' << x . m_W << ',' << x . m_H << ')';
     }
-    friend ostream         & operator <<                   ( ostream         & os,
-                                                             const CRect     & x )
-    {
-      return os << '(' << x . m_X << ',' << x . m_Y << ',' << x . m_W << ',' << x . m_H << ')';
-    }
-    double                   m_X;
-    double                   m_Y;
-    double                   m_W;
-    double                   m_H;
+    double m_X;
+    double m_Y;
+    double m_W;
+    double m_H;
 };
 #endif /* __PROGTEST__ */
 
-class CWindow 
-{
-  public:
-                             CWindow                       ( int               id,
-                                                             const string    & title,
-                                                             const CRect     & absPos );
+class CWindow{
+public:
+    CWindow ( int id, const string& title, const CRect& absPos );
     // add
     // search
     // setPosition
 };
 
-class CButton
-{
-  public:
-                             CButton                       ( int               id,
-                                                             const CRect     & relPos,
-                                                             const string    & name );
+class CButton{
+public:
+    CButton ( int id, const CRect& relPos, const string& name );
 };
 
-class CInput
-{
-  public:
-                             CInput                        ( int               id,
-                                                             const CRect     & relPos,
-                                                             const string    & value );
+class CInput{
+public:
+    CInput ( int id, const CRect& relPos, const string& value );
     // setValue 
     // getValue 
 };
-class CLabel 
-{
-  public:
-                             CLabel                        ( int               id,
-                                                             const CRect     & relPos,
-                                                             const string    & label );
+
+class CLabel{
+public:
+    CLabel ( int id, const CRect& relPos, const string& label );
 };
 
-class CComboBox
-{
-  public:
-                             CComboBox                     ( int               id,
-                                                             const CRect     & relPos );
+class CComboBox{
+public:
+    CComboBox ( int id, const CRect& relPos );
     // add                                                                            
     // setSelected
     // getSelected
@@ -98,14 +75,13 @@ class CComboBox
 
 #ifndef __PROGTEST__
 template <typename _T>
-string toString ( const _T & x )
-{
+string toString ( const _T & x ){
   ostringstream oss;
   oss << x;
   return oss . str ();
 }
 
-int main ( void )
+int main ()
 {
   assert ( sizeof ( CButton ) - sizeof ( string ) < sizeof ( CComboBox ) - sizeof ( vector<string> ) );
   assert ( sizeof ( CInput ) - sizeof ( string ) < sizeof ( CComboBox ) - sizeof ( vector<string> ) );
