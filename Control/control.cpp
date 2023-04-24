@@ -310,10 +310,9 @@ public:
 class CVATRegister{
     CCounter m_IDmaker;
     unordered_map <string, string> m_companyNames;          // original names of companies mapped to the foormated versions
-    unordered_map <string, unordered_set<unsigned long long>> m_companies;  // name of company mapped to set of IDs of solo Invoices
+    unordered_map <string, set<CInvoice, CInvoiceCompare>> m_companies;  // name of company mapped to set of IDs of solo Invoices
     set <CInvoice, CInvoiceCompare> m_accepted;             // set of all accepted invoices
     set <CInvoice, CInvoiceCompare> m_issued;               // set of all issued invoices
-    unordered_map <unsigned long long, CInvoice> m_solos;         // ID mapped to its corresponding solo invoice
 
   public:
     CVATRegister () = default;
@@ -322,7 +321,7 @@ class CVATRegister{
     bool registerCompany ( const string& name ){
         string tmp;
         tmp = formatName(name);
-        unordered_set<unsigned long long int> keys;
+        set<CInvoice, CInvoiceCompare> keys;
         return m_companies.insert(make_pair(tmp, keys)).second && m_companyNames.insert(make_pair(tmp, name)).second;
     };
 
@@ -357,7 +356,7 @@ class CVATRegister{
         CSortCompare comparator(sortBy);
 
         for( const auto& i : m_companies.at(name) ){
-            outList.push_back(m_solos.at(i));
+            outList.push_back(i);
         }
 
         outList.sort(comparator);
@@ -376,12 +375,13 @@ class CVATRegister{
         cout << endl;
     }
 
+    /*
     void printSolo() const{
         cout << "PRINT SOLO:" << endl;
         for(const auto& i : m_solos)
             i.second.print();
         cout << endl;
-    }
+    }*/
 
   private:
     bool checkInvoiceValidity( const CInvoice& newInv) const{
@@ -392,20 +392,18 @@ class CVATRegister{
         return true;
     }
 
-    void addNewSolo( CInvoice& newInv, unsigned long long ID){
-        m_solos.insert( make_pair(ID, newInv));
-        unordered_set<unsigned long long>& keys = m_companies[newInv.buyerF()];
-        keys.insert(ID);
-        unordered_set<unsigned long long>& keys2 = m_companies[newInv.sellerF()];
-        keys2.insert(ID);
+    void addNewSolo( CInvoice& newInv){
+        set<CInvoice, CInvoiceCompare>& keys = m_companies[newInv.buyerF()];
+        keys.insert(newInv);
+        set<CInvoice, CInvoiceCompare>& keys2 = m_companies[newInv.sellerF()];
+        keys2.insert(newInv);
     }
 
-    void removeSolo( CInvoice& remInv , unsigned long long ID){
-        m_solos.erase(ID);
-        unordered_set<unsigned long long>& keys = m_companies[remInv.buyerF()];
-        keys.erase(ID);
-        unordered_set<unsigned long long>& keys2 = m_companies[remInv.sellerF()];
-        keys2.erase(ID);
+    void removeSolo( CInvoice& remInv){
+        set<CInvoice, CInvoiceCompare>& keys = m_companies[remInv.buyerF()];
+        keys.erase(remInv);
+        set<CInvoice, CInvoiceCompare>& keys2 = m_companies[remInv.sellerF()];
+        keys2.erase(remInv);
     }
 
     bool addInvoice( set <CInvoice, CInvoiceCompare>& primary, set <CInvoice, CInvoiceCompare>& secondary, const CInvoice& newInv ){
@@ -423,10 +421,10 @@ class CVATRegister{
         auto compInvoice = secondary.find(newCopy);
         if ( compInvoice == secondary.end() ){
             // if not, add solo invoice to m_solos and add key to m_companies
-            addNewSolo( newCopy , newCopy.m_ID);
+            addNewSolo( newCopy);
         }
         else{
-            removeSolo(newCopy, compInvoice->m_ID);
+            removeSolo(newCopy);
         }
         return true;
     }
@@ -445,11 +443,11 @@ class CVATRegister{
         auto compInvoice = secondary.find(newCopy);
         if ( compInvoice == secondary.end() ){
             // if not, add solo invoice to m_solos and add key to m_companies
-            removeSolo(newCopy, iter->m_ID);
+            removeSolo(newCopy);
         }
         else{
             newCopy.m_ID = iter->m_ID;
-            addNewSolo( newCopy, compInvoice->m_ID );
+            addNewSolo( newCopy);
         }
         primary.erase(iter);
         return true;
@@ -531,7 +529,7 @@ int main ()
     assert ( !r . addIssued ( CInvoice ( CDate ( 2000, 1, 4 ), "Another Company", "First   Company", 200, 30 ) ) );
     r.printCompanies();
     cout << endl;
-    r.printSolo();
+    //r.printSolo();
     cout << endl;
 
     assert ( CInvoice ( CDate ( 2000, 1, 1 ), "first Company", "Third Company, Ltd.", 200, 30.000000 ) == CInvoice ( CDate ( 2000, 1, 1 ), "first Company", "Third Company, Ltd.", 200, 30.000000 ));
@@ -578,7 +576,7 @@ int main ()
              } ) );
 
     r.printCompanies();
-    r.printSolo();
+    //r.printSolo();
     assert ( equalLists ( r . unmatched ( "second company", CSortOpt () . addKey ( CSortOpt::BY_DATE, false ) ),
              list<CInvoice>
              {
@@ -598,7 +596,7 @@ int main ()
     assert ( r . addAccepted ( CInvoice ( CDate ( 2000, 1, 1 ), "Second company ", "First Company", 300, 32 ) ) );
 
     r.printCompanies();
-    r.printSolo();
+    //r.printSolo();
     assert ( equalLists ( r . unmatched ( "First Company", CSortOpt () . addKey ( CSortOpt::BY_SELLER, true ) . addKey ( CSortOpt::BY_BUYER, true ) . addKey ( CSortOpt::BY_DATE, true ) ),
              list<CInvoice>
              {
@@ -637,7 +635,7 @@ int main ()
                CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 32.000000 )
              } ) );
     assert ( r . delIssued ( CInvoice ( CDate ( 2000, 1, 1 ), "First Company", " Third  Company,  Ltd.   ", 200, 30 ) ) );
-    r.printSolo();
+    //r.printSolo();
 
     assert ( equalLists ( r . unmatched ( "First Company", CSortOpt () . addKey ( CSortOpt::BY_SELLER, true ) . addKey ( CSortOpt::BY_BUYER, true ) . addKey ( CSortOpt::BY_DATE, true ). addKey ( CSortOpt::BY_BUYER, true ) . addKey ( CSortOpt::BY_DATE, true ) ),
              list<CInvoice>
