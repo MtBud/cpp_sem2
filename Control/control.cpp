@@ -134,17 +134,6 @@ public:
         return m_sellerF;
     };
 
-    /*
-    void flip(){
-        string tmp;
-        tmp = m_buyer;
-        m_buyer = m_seller;
-        m_seller = tmp;
-        tmp = m_buyerF;
-        m_buyerF = m_sellerF;
-        m_sellerF = tmp;
-    }
-     */
 
     void print() const{
         cout    << "ID: " << m_ID
@@ -192,11 +181,7 @@ struct CInvoiceCompare{
     }
 };
 
-/*Třída CSortOpt určuje kritéria pro řazení. Pro řazení lze použít všechny složky faktury. Pokud například vytvoříme instanci:
- * CSortOpt () . addKey ( CSortOpt::BY_AMOUNT, true ) . addKey ( CSortOpt::BY_SELLER, false )
- * pak se řadí podle fakturované částky vzestupně (první řadicí kritérium) a pro stejné hodnoty fakturované částky
- * se použije řazení podle jména prodávajícího sestupně (druhé řadicí kritérium). Pokud by ani takto nebylo pořadí
- * jednoznačně určené, použije se jako řadicí kritérium pořadí zavedení faktury do registru. Rozhraní třídy CSortOpt je:*/
+
 struct CSortKey{
     int m_key;
     bool m_ascending;
@@ -308,15 +293,6 @@ struct CSortCompare{
             return false;
     }
 
-    /*
-    template <typename T> bool comparisonCase( T lhs, T rhs , int& level){
-        if (lhs.buyer() == rhs.buyer()){
-            level ++;
-            return compare(lhs, rhs);
-        }
-        else
-            return checkAsc(lhs.buyer() < rhs.buyer(), m_rules.m_keys[level].m_ascending);
-    }*/
 
 };
 
@@ -330,35 +306,7 @@ public:
     }
 };
 
-// company class, maybe useful later
-/*
-class CCompany{
-    string m_name;
-public:
-    set <unsigned long long int> m_keys;
 
-    explicit CCompany(string name):m_name(std::move(name)){};
-
-    string name () const{
-        return m_name;
-    }
-};
-
-struct CCompanyCompare{
-    bool operator()(const CCompany& lhs, const CCompany& rhs) const{
-        if (lhs.name() != rhs.name())
-            return lhs.name() < rhs.name();
-        return false;
-    }
-};
-*/
-
-/* containers:
- * set - all accepted invoices -> sorted for easy serach
- * set - all issued   invoices -> sorted for easy serach
- * map - all solo invoices with IDs
- * set - companies with keys to the solo invoices
-*/
 class CVATRegister{
     CCounter m_IDmaker;
     unordered_map <string, string> m_companyNames;          // original names of companies mapped to the foormated versions
@@ -368,19 +316,9 @@ class CVATRegister{
     unordered_map <unsigned long long, CInvoice> m_solos;         // ID mapped to its corresponding solo invoice
 
   public:
-    //inicializuje prázdnou instanci registru,
     CVATRegister () = default;
 
-    /*metoda zavede zadanou firmu do registru. Předané jméno je oficiální název firmy, toto jméno bude používané v
-     * exportech z registru. Návratovou hodnotou je indikátor úspěchu (true)/neúspěchu (false). Za neúspěch považujte,
-     * pokud v registru již existuje firma stejného jména. Při porovnávání jména firmy je registr docela tolerantní:
 
-    při porovnávání nerozlišuje malá a velká písmena,
-    při porovnávání neuvažuje nadbytečné mezery.
-
-    Tato pravidla jsou používána při zakládání nové firmy i vkládání / mazání faktur. Například názvy "My Company",
-     "mY CoMpAnY", " My Company " a " mY CoMPAnY " jsou považované za jednu firmu, ale názvy "My Company" a "MyCompany" označují dvě rozdílné firmy.*/
-    // edge cases: empty name, only whitespace name
     bool registerCompany ( const string& name ){
         string tmp;
         tmp = formatName(name);
@@ -388,45 +326,27 @@ class CVATRegister{
         return m_companies.insert(make_pair(tmp, keys)).second && m_companyNames.insert(make_pair(tmp, name)).second;
     };
 
-    /*metoda přidá fakturu do registru. Tuto metodu volá firma, která fakturu vydala. Návratovou hodnotou je příznak
-     * úspěch (true)/neúspěch (false). Za chybu je považováno, pokud prodávající / kupující ve faktuře nejsou
-     * registrované, prodávající a kupující je ta samá firma nebo pokud stejná faktura již byla pomocí addIssued
-     * zadaná (dvě faktury se musí lišit alespoň v jednom z: prodávající/kupující/datum/částka/DPH).*/
-    /*
-    * add invoice to the list
-    * check if it has complementary invoice
-    *      if yes, delete complementary solo invoice from map and key from company class
-    *      if not, add solo invoice to the map and add key to the class*/
+
     bool addIssued ( const CInvoice& newInv ){
         return addInvoice(m_issued, m_accepted, newInv);
     };
 
 
-    /*    metoda přidá fakturu do registru, tuto metodu volá firma, která fakturu přijala (kupující).
-     * Jinak se metoda chová stejně jako addIssued.*/
     bool addAccepted ( const CInvoice& newInv ){
         return addInvoice(m_accepted, m_issued, newInv);
     };
 
-    /*metoda odebere fakturu z registru. Tuto metodu volá firma, která fakturu vydala a dříve zaregistrovala.
-     * Návratovou hodnotou je příznak úspěch (true)/neúspěch (false). Za chybu je považováno, pokud identická
-     * faktura nebyla dříve registrovaná metodou addIssued.*/
+
     bool delIssued ( const CInvoice& newInv ){
         return removeInvoice(m_issued, m_accepted, newInv);
     };
 
-    /*metoda odebere fakturu z registru. Tuto metodu volá firma, která fakturu přijala a dříve zaregistrovala.
-     * Návratovou hodnotou je příznak úspěch (true)/neúspěch (false). Za chybu je považováno, pokud identická
-     * faktura nebyla dříve registrovaná metodou addAccepted.*/
+
     bool delAccepted ( const CInvoice& newInv ){
         return removeInvoice(m_accepted, m_issued, newInv);
     };
 
-    /*metoda nalezne všechny faktury, které se týkají zadané firmy company a nebyly spárované (tedy byly registrované
-     * pouze pomocí addIssued nebo pouze pomocí addAccepted). Metoda vrátí seznam těchto faktur, faktury budou
-     * seřazené podle kritérií udaných sortOpt. Faktury vrácené touto metodou budou mít na místě názvu firmy
-     * "oficiální" název, tedy ten název, který byl zadán při registraci firmy metodou registerCompany.
-     * Tento oficiální název bude rovněž použit při řazení.*/
+
     list<CInvoice> unmatched ( const string& company, const CSortOpt& sortBy ) const{
         string name = formatName(company);
         list<CInvoice> outList;
@@ -437,9 +357,10 @@ class CVATRegister{
         CSortCompare comparator(sortBy);
 
         for( const auto& i : m_companies.at(name) ){
-            auto iter = lower_bound(outList.begin(), outList.end(), m_solos.at(i),comparator);
-            outList.insert(iter, m_solos.at(i));
+            outList.push_back(m_solos.at(i));
         }
+
+        outList.sort(comparator);
 
         /*
         for(auto const& i: outList)
@@ -463,7 +384,7 @@ class CVATRegister{
     }
 
   private:
-    bool checkInvoiceValidity( const CInvoice& newInv, set<CInvoice, CInvoiceCompare>& invRegister) const{
+    bool checkInvoiceValidity( const CInvoice& newInv) const{
         if ( newInv.buyerF() == newInv.sellerF() )
             return false;
         if ( m_companies.find(newInv.buyerF()) == m_companies.end() || m_companies.find(newInv.sellerF()) == m_companies.end() )
@@ -488,7 +409,7 @@ class CVATRegister{
     }
 
     bool addInvoice( set <CInvoice, CInvoiceCompare>& primary, set <CInvoice, CInvoiceCompare>& secondary, const CInvoice& newInv ){
-        if ( ! checkInvoiceValidity(newInv, primary) )
+        if ( ! checkInvoiceValidity(newInv) )
             return false;
 
         CInvoice newCopy = newInv;
@@ -527,6 +448,7 @@ class CVATRegister{
             removeSolo(newCopy, iter->m_ID);
         }
         else{
+            newCopy.m_ID = iter->m_ID;
             addNewSolo( newCopy, compInvoice->m_ID );
         }
         primary.erase(iter);
@@ -715,6 +637,8 @@ int main ()
                CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 32.000000 )
              } ) );
     assert ( r . delIssued ( CInvoice ( CDate ( 2000, 1, 1 ), "First Company", " Third  Company,  Ltd.   ", 200, 30 ) ) );
+    r.printSolo();
+
     assert ( equalLists ( r . unmatched ( "First Company", CSortOpt () . addKey ( CSortOpt::BY_SELLER, true ) . addKey ( CSortOpt::BY_BUYER, true ) . addKey ( CSortOpt::BY_DATE, true ). addKey ( CSortOpt::BY_BUYER, true ) . addKey ( CSortOpt::BY_DATE, true ) ),
              list<CInvoice>
              {
@@ -725,7 +649,20 @@ int main ()
                CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 30.000000 ),
                CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 32.000000 )
              } ) );
-
+    assert ( equalLists ( r . unmatched ( " ", CSortOpt () . addKey ( CSortOpt::BY_VAT, true ) ),
+                          list<CInvoice>
+                                  {
+                                  } ) );
+    assert ( equalLists ( r . unmatched ( "First company", CSortOpt ()),
+                          list<CInvoice>
+                                  {
+                                          CInvoice ( CDate ( 2000, 1, 1 ), "first Company", "Second     Company", 100, 20.000000 ),
+                                          CInvoice ( CDate ( 2000, 1, 2 ), "first Company", "Second     Company", 200, 30.000000 ),
+                                          CInvoice ( CDate ( 2000, 1, 1 ), "first Company", "Second     Company", 100, 30.000000 ),
+                                          CInvoice ( CDate ( 2000, 1, 1 ), "first Company", "Second     Company", 300, 30.000000 ),
+                                          CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 30.000000 ),
+                                          CInvoice ( CDate ( 2000, 1, 1 ), "Second     Company", "first Company", 300, 32.000000 )
+                                  } ) );
 
   return EXIT_SUCCESS;
 }
