@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-pass-by-value"
 #ifndef __PROGTEST__
 #include <cstring>
 #include <cstdlib>
@@ -117,6 +115,31 @@ public:
         for( auto i : m_elements)
             delete i;
     }
+
+
+    CWindow ( const CWindow& rhs): CElement(rhs.m_id, rhs.m_relPos), m_title(rhs.m_title){
+        for ( auto& i : rhs.m_elements){
+            m_elements.push_back(i->clone());
+        }
+        m_absPos = rhs.m_absPos;
+    }
+
+    CWindow& operator = ( const CWindow& rhs){
+        if ( &rhs != this )
+        {
+            for( auto i : m_elements)
+                delete i;
+            m_elements.clear();
+            m_id = rhs.m_id;
+            m_title = rhs.m_title;
+            m_absPos = rhs.m_absPos;
+            for ( auto& i : rhs.m_elements){
+                m_elements.push_back(i->clone());
+            }
+        }
+        return *this;
+    }
+
 
     CElement* clone() const override{ return new CWindow(*this); }
 
@@ -300,7 +323,9 @@ int main ()
   assert ( dynamic_cast<CInput &> ( *b . search ( 11 ) ) . getValue () == "chucknorris" );
   dynamic_cast<CInput &> ( *b . search ( 11 ) ) . setValue ( "chucknorris@fit.cvut.cz" );
   b . add ( CComboBox ( 21, CRect ( 0.1, 0.5, 0.8, 0.1 ) ) . add ( "PA2" ) . add ( "OSY" ) . add ( "Both" ) );
-  assert ( toString ( b ) ==
+
+    cout << endl << "B" << endl << toString(b) << endl;
+    assert ( toString ( b ) ==
     "[0] Window \"Sample window\" (10,10,600,480)\n"
     "+- [1] Button \"Ok\" (70,394,180,48)\n"
     "+- [2] Button \"Cancel\" (370,394,180,48)\n"
@@ -315,6 +340,8 @@ int main ()
     "   +->PA2<\n"
     "   +- OSY\n"
     "   +- Both\n" );
+
+  cout << endl << "A" << endl << toString(a) << endl;
   assert ( toString ( a ) ==
     "[0] Window \"Sample window\" (10,10,600,480)\n"
     "+- [1] Button \"Ok\" (70,394,180,48)\n"
@@ -342,8 +369,25 @@ int main ()
     "   +->PA2<\n"
     "   +- OSY\n"
     "   +- Both\n" );
-  return EXIT_SUCCESS;
+
+    CWindow c ( 0, "Okno", CRect ( 10, 10, 600, 480 ));
+    c = b;
+    assert ( toString ( c ) ==
+             "[0] Window \"Sample window\" (20,30,640,520)\n"
+             "+- [1] Button \"Ok\" (84,446,192,52)\n"
+             "+- [2] Button \"Cancel\" (404,446,192,52)\n"
+             "+- [10] Label \"Username:\" (84,82,128,52)\n"
+             "+- [11] Input \"chucknorris@fit.cvut.cz\" (276,82,320,52)\n"
+             "+- [20] ComboBox (84,186,512,52)\n"
+             "|  +- Karate\n"
+             "|  +- Judo\n"
+             "|  +- Box\n"
+             "|  +->Progtest<\n"
+             "+- [21] ComboBox (84,290,512,52)\n"
+             "   +->PA2<\n"
+             "   +- OSY\n"
+             "   +- Both\n" );
+
+    return EXIT_SUCCESS;
 }
 #endif /* __PROGTEST__ */
-
-#pragma clang diagnostic pop
