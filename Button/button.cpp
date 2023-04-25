@@ -43,11 +43,12 @@ public:
 class CElement{
 protected:
     int m_id;
-    CRect m_pos;
+    CRect m_relPos;
+    CRect m_absPos;
 public:
 
     CElement ( int id, const CRect& pos ):
-            m_id(id), m_pos(pos){};
+            m_id(id), m_relPos(pos), m_absPos(CRect(1,1,1,1)){};
 
     virtual ~CElement() = default;
 
@@ -55,16 +56,23 @@ public:
         return m_id;
     }
 
+    void resize( CRect& winSize ){
+        m_absPos = CRect( m_relPos.m_X * winSize.m_W + winSize.m_X,
+                          m_relPos.m_Y * winSize.m_H + winSize.m_Y,
+                          m_relPos.m_W * winSize.m_W,
+                          m_relPos.m_H * winSize.m_H);
+    }
+
     friend ostream& operator << ( ostream& os, const CElement& out);
 
-    virtual void print ( ostream& os ) const = 0;
+    virtual void print ( ostream& os , string prefix ) const = 0;
 
     virtual CElement* clone() const = 0;
 };
 
 class CComboBox : public CElement{
 public:
-    int m_idx;
+    unsigned int m_idx;
     vector <string> m_options;
     CComboBox ( int id, const CRect& relPos )
             :CElement(id, relPos), m_idx(0){};
@@ -84,18 +92,16 @@ public:
         return m_idx;
     }
 
-    void print ( ostream& os) const override{
+    void print ( ostream& os, string prefix ) const override{
         os << "[" << m_id << "] ComboBox "
-           << m_pos << endl;
+           << m_absPos << endl;
+        for( unsigned int i = 0; i < m_options.size(); i++){
+            if( m_idx == i)
+                os << prefix << "+->" << m_options[i] << "<" << endl;
+            else
+                os << prefix << "+- " << m_options[i] << endl;
+        }
     };
-
-    void printOption ( ostream& os,  int i ) const{
-        if( m_idx == i)
-            os << ">" << m_options[i] << "<" << endl;
-        else
-            os << " " << m_options[i] << " " << endl;
-    }
-
 };
 
 class CWindow : public CElement{
@@ -103,7 +109,9 @@ class CWindow : public CElement{
     vector <CElement*> m_elements;
 public:
     CWindow ( int id, const string& title, const CRect& absPos )
-        : CElement(id, absPos), m_title(title){};
+        : CElement(id, CRect(1,1,1,1)), m_title(title){
+        m_absPos = absPos;
+    };
 
     ~CWindow () override{
         for( auto i : m_elements)
@@ -114,6 +122,7 @@ public:
 
     CWindow& add ( const CElement& newEl) {
         m_elements.push_back(newEl.clone());
+        m_elements.back()->resize( m_absPos );
         return *this;
     };
 
@@ -126,25 +135,26 @@ public:
     }
 
     void setPosition( const CRect& absPos ){
-        m_pos = absPos;
+        m_absPos = absPos;
+        for( auto& i: m_elements)
+            i->resize(m_absPos);
     }
 
-    void print ( ostream& os) const override{
+    void print ( ostream& os, string prefix) const override{
         os << "[" << m_id << "] Window "
            << "\"" << m_title << "\" "
-           << m_pos << endl;
+           << m_absPos << endl;
         for ( unsigned int i = 0; i < m_elements.size(); i++){
-            os << "+- " << *m_elements[i];
             CComboBox* ptr = dynamic_cast<CComboBox*>(m_elements[i]);
             if( ptr != nullptr){
-                for ( unsigned int j = 0; j < ptr->m_options.size(); j++ ){
-                    if( i != m_elements.size() - 1)
-                        cout << "|  +-";
-                    else
-                        cout << "   +-";
-                    ptr->printOption(os, j);
-                }
+                os << "+- ";
+                if( i != m_elements.size() - 1)
+                    ptr->print(os, string("|  ") );
+                else
+                    ptr->print(os, string("   ") );
+                continue;
             }
+            os << "+- " << *m_elements[i];
         }
     };
 };
@@ -158,10 +168,10 @@ public:
 
     CElement* clone() const override{ return new CButton(*this); }
 
-    void print ( ostream& os) const override{
+    void print ( ostream& os, string prefix) const override{
         os << "[" << m_id << "] Button "
            << "\"" << m_name << "\" "
-           << m_pos << endl;
+           << m_absPos << endl;
     };
 };
 
@@ -182,10 +192,10 @@ public:
         return m_value;
     }
 
-    void print ( ostream& os) const override{
+    void print ( ostream& os, string prefix) const override{
         os << "[" << m_id << "] Input "
            << "\"" << m_value << "\" "
-           << m_pos << endl;
+           << m_absPos << endl;
     };
 };
 
@@ -198,10 +208,10 @@ public:
 
     CElement* clone() const override{ return new CLabel(*this); }
 
-    void print ( ostream& os) const override{
+    void print ( ostream& os, string prefix) const override{
         os << "[" << m_id << "] Label "
            << "\"" << m_label << "\" "
-           << m_pos << endl;
+           << m_absPos << endl;
     };
 };
 
@@ -209,7 +219,7 @@ public:
 
 
 ostream& operator << (ostream& os, const CElement& out){
-    out.print( os );
+    out.print( os , string());
     return os;
 }
 // output operators
@@ -232,12 +242,41 @@ int main ()
     assert ( sizeof ( CButton ) - sizeof ( string ) < sizeof ( CComboBox ) - sizeof ( vector<string> ) );
   assert ( sizeof ( CInput ) - sizeof ( string ) < sizeof ( CComboBox ) - sizeof ( vector<string> ) );
   assert ( sizeof ( CLabel ) - sizeof ( string ) < sizeof ( CComboBox ) - sizeof ( vector<string> ) );
+
+  CWindow aa ( 0, "Okno", CRect ( 10, 10, 600, 480 ));
+  aa.add(CComboBox ( 20, CRect ( 0.1, 0.3, 0.8, 0.1 ) ) . add ( "Karate" ) . add ( "Judo" ) . add ( "Box" ) . add ( "Progtest" ));
+  cout << "TO STRING" << endl;
+  cout << toString(aa) << endl;
+
+  cout << "STRAIGHT TO COUT" << endl;
+  cout << aa << endl;
+
+  cout << "ONLY COMBOBOX" << endl;
+  cout << toString( *aa. search(20)) << endl;
+    assert ( toString ( *aa . search ( 20 ) ) ==
+             "[20] ComboBox (70,154,480,48)\n"
+             "+->Karate<\n"
+             "+- Judo\n"
+             "+- Box\n"
+             "+- Progtest\n" );
+
+
   CWindow a ( 0, "Sample window", CRect ( 10, 10, 600, 480 ) );
   a . add ( CButton ( 1, CRect ( 0.1, 0.8, 0.3, 0.1 ), "Ok" ) ) . add ( CButton ( 2, CRect ( 0.6, 0.8, 0.3, 0.1 ), "Cancel" ) );
   a . add ( CLabel ( 10, CRect ( 0.1, 0.1, 0.2, 0.1 ), "Username:" ) );
   a . add ( CInput ( 11, CRect ( 0.4, 0.1, 0.5, 0.1 ), "chucknorris" ) );
   a . add ( CComboBox ( 20, CRect ( 0.1, 0.3, 0.8, 0.1 ) ) . add ( "Karate" ) . add ( "Judo" ) . add ( "Box" ) . add ( "Progtest" ) );
-  cout << a;
+  cout << toString(a);
+  cout << "[0] Window \"Sample window\" (10,10,600,480)\n"
+          "+- [1] Button \"Ok\" (70,394,180,48)\n"
+          "+- [2] Button \"Cancel\" (370,394,180,48)\n"
+          "+- [10] Label \"Username:\" (70,58,120,48)\n"
+          "+- [11] Input \"chucknorris\" (250,58,300,48)\n"
+          "+- [20] ComboBox (70,154,480,48)\n"
+          "   +->Karate<\n"
+          "   +- Judo\n"
+          "   +- Box\n"
+          "   +- Progtest\n";
   assert ( toString ( a ) ==
     "[0] Window \"Sample window\" (10,10,600,480)\n"
     "+- [1] Button \"Ok\" (70,394,180,48)\n"
