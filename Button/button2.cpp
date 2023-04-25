@@ -64,9 +64,7 @@ public:
     }
 
     friend ostream& operator << ( ostream& os, const CElement& out);
-
     virtual void print ( ostream& os , const string& prefix ) const = 0;
-
     virtual CElement* clone() const = 0;
 };
 
@@ -95,8 +93,8 @@ public:
                           m_relPos.m_H * winSize.m_H);
         for ( auto& i : m_elements){
             auto* ptr = dynamic_cast<CContainer*>(i);
-            if(ptr != nullptr)
-                ptr->CContainer::resize( m_absPos );
+            if(ptr)
+                ptr->resize( m_absPos );
             else
                 i->resize( m_absPos );
         }
@@ -106,6 +104,8 @@ public:
         for(auto i : m_elements){
             if( i->id() == id )
                 return i;
+            auto* ptr = dynamic_cast<CContainer*>(i);
+            if(ptr) return ptr->search(id);
         }
         return nullptr;
     }
@@ -172,7 +172,7 @@ public:
            << m_absPos << endl;
         for (unsigned int i = 0; i < m_elements.size(); i++) {
             auto *ptr = dynamic_cast<CComboBox *>(m_elements[i]);
-            if (ptr != nullptr) {
+            if (ptr) {
                 os << prefix << "+- ";
                 if (i != m_elements.size() - 1)
                     ptr->print(os, prefix + "|  ");
@@ -181,7 +181,7 @@ public:
                 continue;
             }
             auto* ptr2 = dynamic_cast<CPanel*>(m_elements[i]);
-            if( ptr2 != nullptr){
+            if( ptr2 ){
                 os << "+- ";
                 if( i != m_elements.size() - 1)
                     ptr2->print(os, prefix + "|  " );
@@ -240,7 +240,7 @@ public:
            << m_absPos << endl;
         for ( unsigned int i = 0; i < m_elements.size(); i++){
             auto* ptr = dynamic_cast<CComboBox*>(m_elements[i]);
-            if( ptr != nullptr){
+            if( ptr ){
                 os << "+- ";
                 if( i != m_elements.size() - 1)
                     ptr->print(os, string("|  ") );
@@ -249,7 +249,7 @@ public:
                 continue;
             }
             auto* ptr2 = dynamic_cast<CPanel*>(m_elements[i]);
-            if( ptr2 != nullptr){
+            if( ptr2 ){
                 os << "+- ";
                 if( i != m_elements.size() - 1)
                     ptr2->print(os, string("|  ") );
@@ -302,8 +302,6 @@ public:
            << "\"" << m_value << "\" "
            << m_absPos << endl;
     };
-
-    friend void defaultResize(CRect &winSize);
 };
 //-------------------------------------------------------------------------------------------
 
@@ -326,13 +324,6 @@ public:
 ostream& operator << (ostream& os, const CElement& out){
     out.print( os , string());
     return os;
-}
-
-void defaultResize( CRect& winSize ){
-    m_absPos = CRect( m_relPos.m_X * winSize.m_W + winSize.m_X,
-                      m_relPos.m_Y * winSize.m_H + winSize.m_Y,
-                      m_relPos.m_W * winSize.m_W,
-                      m_relPos.m_H * winSize.m_H);
 }
 
 // output operators
@@ -388,6 +379,11 @@ int main ()
   dynamic_cast<CInput &> ( *b . search ( 11 ) ) . setValue ( "chucknorris@fit.cvut.cz" );
   CPanel & p = dynamic_cast<CPanel &> ( *b . search ( 12 ) );
   p . add ( CComboBox ( 21, CRect ( 0.1, 0.5, 0.8, 0.1 ) ) . add ( "PA2" ) . add ( "OSY" ) . add ( "Both" ) );
+
+    cout << "TO STRING A" << endl;
+    cout << toString(a) << endl;
+    cout << "TO STRING B" << endl;
+    cout << toString(b) << endl;
   assert ( toString ( b ) ==
     "[0] Window \"Sample window\" (10,10,600,480)\n"
     "+- [1] Button \"Ok\" (70,394,180,48)\n"
