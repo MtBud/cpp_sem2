@@ -76,10 +76,23 @@ protected:
 public:
     CContainer ( int id, CRect relPos): CElement(id, relPos){};
 
+    ~CContainer() override{
+        for( auto i : m_elements)
+            delete i;
+    }
+
+    CContainer ( const CContainer& rhs): CContainer(rhs.m_id, CRect(1,1,1,1)){
+        for ( auto& i : rhs.m_elements){
+            m_elements.push_back(i->clone());
+        }
+        m_absPos = rhs.m_absPos;
+    }
+
+
     CContainer& add ( const CElement& newEl ) {
         m_elements.push_back(newEl.clone());
         auto* ptr = dynamic_cast<CContainer*>(m_elements.back());
-        if(ptr != nullptr)
+        if(ptr)
             ptr->resize( m_absPos );
         else
             m_elements.back()->resize( m_absPos );
@@ -159,13 +172,14 @@ class CPanel : public CContainer {
 public:
     CPanel(int id, const CRect &relPos) : CContainer(id, relPos){};
 
-    // add
-    CElement *clone() const override { return new CPanel(*this); }
-
-    CContainer& add ( const CElement& newEl ) {
-        m_elements.push_back(newEl.clone());
-        return *this;
-    };
+    CElement *clone() const override {
+        CElement* cloned = new CPanel(*this);
+        auto* ptr = dynamic_cast<CPanel*>(cloned);
+        ptr->m_relPos = m_relPos;
+        for( unsigned int i = 0; i < m_elements.size(); i++)
+            ptr->m_elements[i] = m_elements[i]->clone();
+        return cloned;
+    }
 
     void print(ostream &os, const string& prefix) const override {
         os << "[" << m_id << "] Panel "
@@ -203,18 +217,6 @@ public:
             : CContainer(id, CRect(1,1,1,1)), m_title(title){
         m_absPos = absPos;
     };
-
-    ~CWindow () override{
-        for( auto i : m_elements)
-            delete i;
-    }
-
-    CWindow ( const CWindow& rhs): CContainer(rhs.m_id, CRect(1,1,1,1)), m_title(rhs.m_title){
-        for ( auto& i : rhs.m_elements){
-            m_elements.push_back(i->clone());
-        }
-        m_absPos = rhs.m_absPos;
-    }
 
     CWindow& operator = ( const CWindow& rhs){
         if ( &rhs != this )
