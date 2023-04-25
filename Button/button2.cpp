@@ -125,8 +125,13 @@ public:
 
     void setPosition( const CRect& absPos ){
         m_absPos = absPos;
-        for( auto& i: m_elements)
+        for( auto& i: m_elements){
+            auto* ptr = dynamic_cast<CContainer*>(i);
+            if(ptr)
+                ptr->resize( m_absPos );
+            else
             i->resize(m_absPos);
+        }
     }
 };
 
@@ -196,7 +201,7 @@ public:
             }
             auto* ptr2 = dynamic_cast<CPanel*>(m_elements[i]);
             if( ptr2 ){
-                os << "+- ";
+                os << prefix << "+- ";
                 if( i != m_elements.size() - 1)
                     ptr2->print(os, prefix + "|  " );
                 else
@@ -465,6 +470,9 @@ int main ()
     "      +- OSY\n"
     "      +- Both\n" );
   p . add ( p );
+
+  cout << "MAD SUS SHIT" << endl;
+  cout << toString(p) << endl;
   assert ( toString ( p ) ==
     "[12] Panel (84,186,512,364)\n"
     "+- [20] ComboBox (135.2,295.2,409.6,36.4)\n"
@@ -588,6 +596,9 @@ int main ()
     "            +->PA2<\n"
     "            +- OSY\n"
     "            +- Both\n" );
+
+    cout << "SUSSIEST OF BAKAS" << endl;
+    cout << toString(b) << endl;
   assert ( toString ( b ) ==
     "[0] Window \"Sample window\" (20,30,640,520)\n"
     "+- [1] Button \"Ok\" (84,446,192,52)\n"
