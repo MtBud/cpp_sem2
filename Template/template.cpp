@@ -26,34 +26,124 @@
 using namespace std;
 #endif /* __PROGTEST__ */
 
+struct CNode{
+    bool visited = false;
+    set<string> relations;
+};
+
 template <typename M_>
 class CContest{
-    map < pair<string, string>, M_ > m_matches;
+    map < pair<string, string>, pair<M_,bool> > m_matches;
+    // possibly add graph cache
+    map < string, CNode > m_graph;
+    set<string> m_start;
 public:
     // default constructor
     CContest() = default;
     // destructor
     // addMatch ( contestant1, contestant2, result )
     CContest& addMatch (  string contestant1,  string contestant2, const M_& result){
+        bool flipped = false;
         if( contestant1 == contestant2)
             throw logic_error("Contestant 1 and contestant 2 are equal");
-        if( contestant1 > contestant2)
+        if( contestant1 > contestant2){
             swap(contestant1, contestant2);
-        if( m_matches.insert(make_pair( make_pair(contestant1, contestant2), result) ).second == false )
+            flipped = true;
+        }
+        if( m_matches.insert(make_pair( make_pair(contestant1, contestant2), make_pair(result, flipped)) ).second == false )
             throw logic_error("Adding duplicate entry");
+
+        // add nodes to graph
+        if( m_graph.insert( make_pair(contestant1, CNode() ) ).second)
+            m_start.insert(contestant1);
+        if( m_graph.insert( make_pair(contestant2, CNode() ) ).second)
+            m_start.insert(contestant1);
+
+
         return *this;
     }
     // isOrdered ( comparator )
+    template <class Compare>
+    bool isOrdered ( Compare comparator ){
+        makeGraph( comparator );
+        if(m_start.size() != 1)
+            return false;
+        list<string> outList =  findPath(*m_start.begin(), 1, list<string>());
+    }
+
     // results ( comparator )
 
-    void printKeys(){
-        cout << "MAP KEYS" << endl;
+    void printMatches(){
+        cout << "MATCHES" << endl;
         for( auto& i : m_matches){
             cout << i.first.first << " " << i.first.second << endl;
         }
     }
+
+    void printGraph(){
+        cout << "GRAPH" << endl;
+        for( auto& i : m_graph){
+            cout << i.first << " -- ";
+            for( auto& j : i.second.relations )
+                cout << j << " ";
+            cout << endl;
+        }
+    }
 private:
-    // todo
+    template <class Compare>
+    void makeGraph( Compare comparator){
+
+        for ( auto& i : m_matches ){
+            const string& cont1 = m_matches.first.first, cont2 = m_matches.first.second;
+            if(m_matches.second.second)
+                cont1 = m_matches.first.second, cont2 = m_matches.first.first;
+
+            int result = comparator( m_matches.second.first );
+            if(result < 0){
+                m_graph.at(cont2).relations.insert(cont1);
+                m_start.erase(cont1);
+                continue;
+            }
+            if(result > 0){
+                m_graph.at(cont1).relations.insert(cont2);
+                m_start.erase(cont2);
+            }
+        }
+    }
+
+    list<string> findPath( const string& currNode , int depth, list<string> outList){
+        m_graph.at( currNode).visited = true;
+        depth ++;
+        // terminate reccursion when the graph reaches final node
+        if( m_graph.at(currNode).relations.empty()){
+            if( depth == m_graph.size()){
+                m_graph.at( currNode).visited = false;
+                outList.push_back(currNode);
+                return outList;
+            }
+            else{
+                m_graph.at( currNode).visited = false;
+                return {};
+            }
+        }
+
+        for( auto& i : m_graph.at( currNode).relations ){
+            if( m_graph.at(i).visited ){
+                m_graph.at( currNode).visited = false;
+                return {};
+            }
+            list<string> result = findPath(i, depth, outList);
+            if( ! result.empty() ){
+                m_graph.at( currNode).visited = false;
+                return result;
+            }
+        }
+
+        m_graph.at( currNode).visited = false;
+        return {};
+
+    }
+
 };
 
 #ifndef __PROGTEST__
@@ -76,6 +166,9 @@ private:
     int m_DiffAtLeast;
 };
 
+// 0 if equal
+// - if m_A is smaller
+// + if m_A is higher
 int HigherScore( const CMatch& x ){
   return ( x . m_A > x . m_B ) - ( x . m_B > x . m_A );
 }
@@ -100,8 +193,13 @@ int main(){
         assert ( "Exception missing!" == nullptr );
     }
     catch ( const logic_error & e ){}
+    try{
+        x . addMatch ( "C++", "C++", CMatch ( 10, 0 ) );
+        assert ( "Exception missing!" == nullptr );
+    }
+    catch ( const logic_error & e ){}
 
-    x.printKeys();
+    x.printMatches();
     
   /*
   assert ( ! x . isOrdered ( HigherScore ) );
