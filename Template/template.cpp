@@ -63,15 +63,28 @@ public:
         return *this;
     }
     // isOrdered ( comparator )
-    template <class Compare>
-    bool isOrdered ( Compare comparator ){
+    bool isOrdered ( int (*comparator)(M_) ){
         makeGraph( comparator );
         if(m_start.size() != 1)
             return false;
         list<string> outList =  findPath(*m_start.begin(), 1, list<string>());
+        if(outList.empty())
+            return false;
+        else
+            return true;
     }
 
     // results ( comparator )
+    list<string> results ( int (*comparator)(M_)  ){
+        makeGraph( comparator );
+        if(m_start.size() != 1)
+            throw logic_error("Multiple starting points");
+        list<string> outList =  findPath(*m_start.begin(), 1, list<string>());
+        if(outList.empty())
+            throw logic_error("List couldn't be completed");
+        else
+            return outList;
+    }
 
     void printMatches(){
         cout << "MATCHES" << endl;
@@ -90,8 +103,7 @@ public:
         }
     }
 private:
-    template <class Compare>
-    void makeGraph( Compare comparator){
+    void makeGraph( int (*comparator)(M_) ){
 
         for ( auto& i : m_matches ){
             const string& cont1 = m_matches.first.first, cont2 = m_matches.first.second;
@@ -201,7 +213,7 @@ int main(){
 
     x.printMatches();
     
-  /*
+
   assert ( ! x . isOrdered ( HigherScore ) );
   try
   {
@@ -216,6 +228,7 @@ int main(){
     assert ( "Invalid exception thrown!" == nullptr );
   }
 
+  /*
   x . addMatch ( "PHP", "Pascal", CMatch ( 3, 6 ) ); 
 
   assert ( x . isOrdered ( HigherScore ) );
