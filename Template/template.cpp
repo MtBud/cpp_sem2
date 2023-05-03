@@ -28,12 +28,30 @@ using namespace std;
 
 template <typename M_>
 class CContest{
+    map < pair<string, string>, M_ > m_matches;
 public:
     // default constructor
+    CContest() = default;
     // destructor
     // addMatch ( contestant1, contestant2, result )
+    CContest& addMatch (  string contestant1,  string contestant2, const M_& result){
+        if( contestant1 == contestant2)
+            throw logic_error("Contestant 1 and contestant 2 are equal");
+        if( contestant1 > contestant2)
+            swap(contestant1, contestant2);
+        if( m_matches.insert(make_pair( make_pair(contestant1, contestant2), result) ).second == false )
+            throw logic_error("Adding duplicate entry");
+        return *this;
+    }
     // isOrdered ( comparator )
     // results ( comparator )
+
+    void printKeys(){
+        cout << "MAP KEYS" << endl;
+        for( auto& i : m_matches){
+            cout << i.first.first << " " << i.first.second << endl;
+        }
+    }
 private:
     // todo
 };
@@ -49,7 +67,7 @@ public:
 
 class HigherScoreThreshold{
 public:
-     HigherScoreThreshold( int diffAtLeast ): m_DiffAtLeast ( diffAtLeast ){}
+    HigherScoreThreshold( int diffAtLeast ): m_DiffAtLeast ( diffAtLeast ){}
     int operator () ( const CMatch & x ) const{
       return ( x . m_A > x . m_B + m_DiffAtLeast ) - ( x . m_B > x . m_A + m_DiffAtLeast );
     }
@@ -71,8 +89,21 @@ int main(){
     . addMatch ( "Java", "PHP", CMatch ( 6, 2 ) )
     . addMatch ( "Java", "Pascal", CMatch ( 7, 3 ) )
     . addMatch ( "PHP", "Basic", CMatch ( 10, 0 ) );
+
+    try{
+        x . addMatch ( "PHP", "Basic", CMatch ( 10, 0 ) );
+        assert ( "Exception missing!" == nullptr );
+    }
+    catch ( const logic_error & e ){}
+    try{
+        x . addMatch ( "Basic", "PHP", CMatch ( 10, 0 ) );
+        assert ( "Exception missing!" == nullptr );
+    }
+    catch ( const logic_error & e ){}
+
+    x.printKeys();
     
-  
+  /*
   assert ( ! x . isOrdered ( HigherScore ) );
   try
   {
@@ -204,5 +235,8 @@ int main(){
     assert ( "Invalid exception thrown!" == nullptr );
   }
   return EXIT_SUCCESS;
+
+   */
 }
+
 #endif /* __PROGTEST__ */
