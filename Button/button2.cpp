@@ -10,6 +10,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <utility>
 #include <vector>
 #include <list>
 #include <string>
@@ -39,7 +40,8 @@ public:
 };
 #endif /* __PROGTEST__ */
 
-
+/** CElement is a base abstract class.
+ * All other classes are derived from this one */
 class CElement{
 protected:
     int m_id;
@@ -66,73 +68,6 @@ public:
     friend ostream& operator << ( ostream& os, const CElement& out);
     virtual void print ( ostream& os , const string& prefix ) const = 0;
     virtual CElement* clone() const = 0;
-};
-
-//-------------------------------------------------------------------------------------------
-
-class CContainer : public CElement{
-protected:
-    vector <CElement*> m_elements;
-public:
-    CContainer ( int id, CRect relPos): CElement(id, relPos){};
-
-    ~CContainer() override{
-        for( auto i : m_elements)
-            delete i;
-    }
-
-    CContainer ( const CContainer& rhs): CContainer(rhs.m_id, CRect(1,1,1,1)){
-        for ( auto& i : rhs.m_elements){
-            m_elements.push_back(i->clone());
-        }
-        m_absPos = rhs.m_absPos;
-    }
-
-
-    CContainer& add ( const CElement& newEl ) {
-        m_elements.push_back(newEl.clone());
-        auto* ptr = dynamic_cast<CContainer*>(m_elements.back());
-        if(ptr)
-            ptr->resize( m_absPos );
-        else
-            m_elements.back()->resize( m_absPos );
-        return *this;
-    };
-
-    void resize( CRect& winSize ){
-        m_absPos = CRect( m_relPos.m_X * winSize.m_W + winSize.m_X,
-                          m_relPos.m_Y * winSize.m_H + winSize.m_Y,
-                          m_relPos.m_W * winSize.m_W,
-                          m_relPos.m_H * winSize.m_H);
-        for ( auto& i : m_elements){
-            auto* ptr = dynamic_cast<CContainer*>(i);
-            if(ptr)
-                ptr->resize( m_absPos );
-            else
-                i->resize( m_absPos );
-        }
-    }
-
-    CElement* search( int id) const {
-        for(auto i : m_elements){
-            if( i->id() == id )
-                return i;
-            auto* ptr = dynamic_cast<CContainer*>(i);
-            if(ptr) return ptr->search(id);
-        }
-        return nullptr;
-    }
-
-    void setPosition( const CRect& absPos ){
-        m_absPos = absPos;
-        for( auto& i: m_elements){
-            auto* ptr = dynamic_cast<CContainer*>(i);
-            if(ptr)
-                ptr->resize( m_absPos );
-            else
-            i->resize(m_absPos);
-        }
-    }
 };
 
 //------------------------------------------------------------------------------------------
@@ -171,35 +106,89 @@ public:
     };
 };
 
-//-----------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------
 
-class CPanel : public CContainer {
+/** CContainer is an abstract base class for classes CPanel and CWindow.
+ * It has all the methods shared by the two classes. */
+class CContainer : public CElement{
+protected:
+    vector <CElement*> m_elements;
 public:
-    CPanel(int id, const CRect &relPos) : CContainer(id, relPos){};
+    CContainer ( int id, CRect relPos): CElement(id, relPos){};
 
-    CElement *clone() const override {
-        CElement* cloned = new CPanel(*this);
-        auto* ptr = dynamic_cast<CPanel*>(cloned);
-        ptr->m_relPos = m_relPos;
-        for( unsigned int i = 0; i < m_elements.size(); i++)
-            ptr->m_elements[i] = m_elements[i]->clone();
-        return cloned;
+    ~CContainer() override{
+        for( auto i : m_elements)
+            delete i;
     }
 
-    void print(ostream &os, const string& prefix) const override {
-        os << "[" << m_id << "] Panel "
-           << m_absPos << endl;
-        for (unsigned int i = 0; i < m_elements.size(); i++) {
-            auto *ptr = dynamic_cast<CComboBox *>(m_elements[i]);
-            if (ptr) {
+    CContainer ( const CContainer& rhs): CContainer(rhs.m_id, CRect(1,1,1,1)){
+        for ( auto& i : rhs.m_elements){
+            m_elements.push_back(i->clone());
+        }
+        m_absPos = rhs.m_absPos;
+    }
+
+    // adds an element to the vector
+    CContainer& add ( const CElement& newEl ) {
+        m_elements.push_back(newEl.clone());
+        auto* ptr = dynamic_cast<CContainer*>(m_elements.back());
+        if(ptr)
+            ptr->resize( m_absPos );
+        else
+            m_elements.back()->resize( m_absPos );
+        return *this;
+    };
+
+    // changes the relative and absolute positions of itself and all contained elements
+    void resize( CRect& winSize ){
+        m_absPos = CRect( m_relPos.m_X * winSize.m_W + winSize.m_X,
+                          m_relPos.m_Y * winSize.m_H + winSize.m_Y,
+                          m_relPos.m_W * winSize.m_W,
+                          m_relPos.m_H * winSize.m_H);
+        for ( auto& i : m_elements){
+            auto* ptr = dynamic_cast<CContainer*>(i);
+            if(ptr)
+                ptr->resize( m_absPos );
+            else
+                i->resize( m_absPos );
+        }
+    }
+
+    // searches all elements for the given id
+    CElement* search( int id) const {
+        for(auto i : m_elements){
+            if( i->id() == id )
+                return i;
+            auto* ptr = dynamic_cast<CContainer*>(i);
+            if(ptr) return ptr->search(id);
+        }
+        return nullptr;
+    }
+
+    void setPosition( const CRect& absPos ){
+        m_absPos = absPos;
+        for( auto& i: m_elements){
+            auto* ptr = dynamic_cast<CContainer*>(i);
+            if(ptr)
+                ptr->resize( m_absPos );
+            else
+            i->resize(m_absPos);
+        }
+    }
+
+    // prints out all the elements with correct formating
+    void printElements( ostream& os, const string& prefix ) const{
+        for ( unsigned int i = 0; i < m_elements.size(); i++){
+            auto* ptr = dynamic_cast<CComboBox*>(m_elements[i]);
+            if( ptr ){
                 os << prefix << "+- ";
-                if (i != m_elements.size() - 1)
+                if( i != m_elements.size() - 1)
                     ptr->print(os, prefix + "|  ");
                 else
                     ptr->print(os, prefix + "   ");
                 continue;
             }
-            auto* ptr2 = dynamic_cast<CPanel*>(m_elements[i]);
+            auto* ptr2 = dynamic_cast<CContainer*>(m_elements[i]);
             if( ptr2 ){
                 os << prefix << "+- ";
                 if( i != m_elements.size() - 1)
@@ -210,6 +199,26 @@ public:
             }
             os << prefix << "+- " << *m_elements[i];
         }
+    }
+};
+
+//-----------------------------------------------------------------------------------------
+
+class CPanel : public CContainer {
+public:
+    CPanel(int id, const CRect &relPos) : CContainer(id, relPos) {};
+
+    CElement *clone() const override {
+        CElement *cloned = new CPanel(*this);
+        auto *ptr = dynamic_cast<CPanel *>(cloned);
+        ptr->m_relPos = m_relPos;
+        return cloned;
+    }
+
+    void print(ostream &os, const string &prefix) const override {
+        os << "[" << m_id << "] Panel "
+           << m_absPos << endl;
+        printElements(os, prefix);
     };
 };
 
@@ -218,8 +227,8 @@ public:
 class CWindow : public CContainer{
     string m_title;
 public:
-    CWindow ( int id, const string& title, const CRect& absPos )
-            : CContainer(id, CRect(1,1,1,1)), m_title(title){
+    CWindow ( int id, string  title, const CRect& absPos )
+            : CContainer(id, CRect(1,1,1,1)), m_title(std::move(title)){
         m_absPos = absPos;
     };
 
@@ -245,37 +254,17 @@ public:
         os << "[" << m_id << "] Window "
            << "\"" << m_title << "\" "
            << m_absPos << endl;
-        for ( unsigned int i = 0; i < m_elements.size(); i++){
-            auto* ptr = dynamic_cast<CComboBox*>(m_elements[i]);
-            if( ptr ){
-                os << "+- ";
-                if( i != m_elements.size() - 1)
-                    ptr->print(os, string("|  ") );
-                else
-                    ptr->print(os, string("   ") );
-                continue;
-            }
-            auto* ptr2 = dynamic_cast<CPanel*>(m_elements[i]);
-            if( ptr2 ){
-                os << "+- ";
-                if( i != m_elements.size() - 1)
-                    ptr2->print(os, string("|  ") );
-                else
-                    ptr2->print(os, string("   ") );
-                continue;
-            }
-            os << "+- " << *m_elements[i];
-        }
+        printElements(os, prefix);
     };
 };
 
-//--------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------
 
 class CButton : public CElement{
     string m_name;
 public:
-    CButton ( int id, const CRect& relPos, const string& name ):
-            CElement(id, relPos), m_name(name){};
+    CButton ( int id, const CRect& relPos, string  name ):
+            CElement(id, relPos), m_name(std::move(name)){};
 
     CElement* clone() const override{ return new CButton(*this); }
 
@@ -291,8 +280,8 @@ public:
 class CInput : public CElement {
     string m_value;
 public:
-    CInput(int id, const CRect &relPos, const string &value)
-            : CElement(id, relPos), m_value(value) {};
+    CInput(int id, const CRect &relPos, string value)
+            : CElement(id, relPos), m_value(std::move(value)) {};
 
     CElement *clone() const override { return new CInput(*this); }
 
@@ -310,13 +299,14 @@ public:
            << m_absPos << endl;
     };
 };
+
 //-------------------------------------------------------------------------------------------
 
 class CLabel : public CElement{
     string m_label;
 public:
-    CLabel ( int id, const CRect& relPos, const string& label )
-            :CElement(id, relPos), m_label(label){};
+    CLabel ( int id, const CRect& relPos, string  label )
+            :CElement(id, relPos), m_label(std::move(label)){};
 
     CElement* clone() const override{ return new CLabel(*this); }
 
@@ -448,6 +438,8 @@ int main ()
     "      +- OSY\n"
     "      +- Both\n" );
   p . add ( p );
+    cout << "TO STRING P" << endl;
+    cout << toString(p) << endl;
   assert ( toString ( p ) ==
     "[12] Panel (84,186,512,364)\n"
     "+- [20] ComboBox (135.2,295.2,409.6,36.4)\n"
