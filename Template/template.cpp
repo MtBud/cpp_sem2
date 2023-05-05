@@ -35,8 +35,6 @@ template <typename M_>
 class CContest{
     map < pair<string, string>, pair<M_,bool> > m_matches;
     // possibly add graph cache
-    map < string, CNode > m_graph;
-    set<string> m_start;
 public:
     // default constructor
     CContest() = default;
@@ -54,20 +52,22 @@ public:
             throw logic_error("Adding duplicate entry");
 
         // add nodes to graph
-        if( m_graph.insert( make_pair(contestant1, CNode() ) ).second)
-            m_start.insert(contestant1);
-        if( m_graph.insert( make_pair(contestant2, CNode() ) ).second)
-            m_start.insert(contestant1);
+
 
 
         return *this;
     }
     // isOrdered ( comparator )
-    bool isOrdered ( int (*comparator)(M_) ){
-        makeGraph( comparator );
-        if(m_start.size() != 1)
+    template <typename C>
+    bool isOrdered ( function<int(C)> comparator ){
+        map < string, CNode > graph;
+        set<string> start;
+
+        makeGraph( comparator, graph, start);
+        printGraph(graph);
+        if(start.size() != 1)
             return false;
-        list<string> outList =  findPath(*m_start.begin(), 1, list<string>());
+        list<string> outList =  findPath(*start.begin(), 0, graph, list<string>());
         if(outList.empty())
             return false;
         else
@@ -75,11 +75,15 @@ public:
     }
 
     // results ( comparator )
-    list<string> results ( int (*comparator)(M_)  ){
-        makeGraph( comparator );
-        if(m_start.size() != 1)
+    template <typename C>
+    list<string> results ( function<int(C)> comparator ){
+        map < string, CNode > graph;
+        set<string> start;
+
+        makeGraph( comparator, graph, start );
+        if(start.size() != 1)
             throw logic_error("Multiple starting points");
-        list<string> outList =  findPath(*m_start.begin(), 1, list<string>());
+        list<string> outList =  findPath(*start.begin(), 0, graph, list<string>());
         if(outList.empty())
             throw logic_error("List couldn't be completed");
         else
@@ -93,65 +97,71 @@ public:
         }
     }
 
-    void printGraph(){
+    void printGraph( map < string, CNode >& graph){
         cout << "GRAPH" << endl;
-        for( auto& i : m_graph){
+        for( auto& i : graph){
             cout << i.first << " -- ";
             for( auto& j : i.second.relations )
-                cout << j << " ";
+                cout << j << ", ";
             cout << endl;
         }
     }
 private:
-    void makeGraph( int (*comparator)(M_) ){
+    template <typename C>
+    void makeGraph( function<int(C)> comparator, map < string, CNode >& graph, set<string>& m_start){
 
         for ( auto& i : m_matches ){
-            const string& cont1 = m_matches.first.first, cont2 = m_matches.first.second;
-            if(m_matches.second.second)
-                cont1 = m_matches.first.second, cont2 = m_matches.first.first;
+            string cont1 = i.first.first, cont2 = i.first.second;
+            if(i.second.second)
+                cont1 = i.first.second, cont2 = i.first.first;
 
-            int result = comparator( m_matches.second.first );
+            if( graph.insert( make_pair(cont1, CNode() ) ).second)
+                m_start.insert(cont1);
+            if( graph.insert( make_pair(cont2, CNode() ) ).second)
+                m_start.insert(cont2);
+
+            int result = comparator( i.second.first );
             if(result < 0){
-                m_graph.at(cont2).relations.insert(cont1);
+                graph.at(cont2).relations.insert(cont1);
                 m_start.erase(cont1);
                 continue;
             }
             if(result > 0){
-                m_graph.at(cont1).relations.insert(cont2);
+                graph.at(cont1).relations.insert(cont2);
                 m_start.erase(cont2);
             }
         }
     }
 
-    list<string> findPath( const string& currNode , int depth, list<string> outList){
-        m_graph.at( currNode).visited = true;
+    list<string> findPath( const string& currNode , unsigned int depth, map < string, CNode >& graph, list<string> outList){
+        graph.at( currNode).visited = true;
         depth ++;
         // terminate reccursion when the graph reaches final node
-        if( m_graph.at(currNode).relations.empty()){
-            if( depth == m_graph.size()){
-                m_graph.at( currNode).visited = false;
+        if( graph.at(currNode).relations.empty()){
+            if( depth == graph.size()){
+                graph.at( currNode).visited = false;
                 outList.push_back(currNode);
                 return outList;
             }
             else{
-                m_graph.at( currNode).visited = false;
+                graph.at( currNode).visited = false;
                 return {};
             }
         }
 
-        for( auto& i : m_graph.at( currNode).relations ){
-            if( m_graph.at(i).visited ){
-                m_graph.at( currNode).visited = false;
+        for( auto& i : graph.at( currNode).relations ){
+            if( graph.at(i).visited ){
+                graph.at( currNode).visited = false;
                 return {};
             }
-            list<string> result = findPath(i, depth, outList);
+            list<string> result = findPath(i, depth, graph, outList);
             if( ! result.empty() ){
-                m_graph.at( currNode).visited = false;
+                graph.at( currNode).visited = false;
                 return result;
             }
         }
 
-        m_graph.at( currNode).visited = false;
+        graph.at( currNode).visited = false;
         return {};
 
     }
@@ -212,6 +222,7 @@ int main(){
     catch ( const logic_error & e ){}
 
     x.printMatches();
+    cout << endl;
     
 
   assert ( ! x . isOrdered ( HigherScore ) );
@@ -228,7 +239,7 @@ int main(){
     assert ( "Invalid exception thrown!" == nullptr );
   }
 
-  /*
+
   x . addMatch ( "PHP", "Pascal", CMatch ( 3, 6 ) ); 
 
   assert ( x . isOrdered ( HigherScore ) );
@@ -347,7 +358,7 @@ int main(){
   }
   return EXIT_SUCCESS;
 
-   */
+
 }
 
 #endif /* __PROGTEST__ */
