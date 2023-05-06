@@ -58,8 +58,8 @@ public:
         return *this;
     }
     // isOrdered ( comparator )
-    template <typename C>
-    bool isOrdered ( function<int(C)> comparator ){
+    template <typename Comp>
+    bool isOrdered ( Comp comparator ){
         map < string, CNode > graph;
         set<string> start;
 
@@ -75,8 +75,8 @@ public:
     }
 
     // results ( comparator )
-    template <typename C>
-    list<string> results ( function<int(C)> comparator ){
+    template <typename Comp>
+    list<string> results ( Comp comparator ){
         map < string, CNode > graph;
         set<string> start;
 
@@ -84,6 +84,8 @@ public:
         if(start.size() != 1)
             throw logic_error("Multiple starting points");
         list<string> outList =  findPath(*start.begin(), 0, graph, list<string>());
+        printList(outList);
+
         if(outList.empty())
             throw logic_error("List couldn't be completed");
         else
@@ -106,9 +108,16 @@ public:
             cout << endl;
         }
     }
+
+    void printList( list < string >& outList){
+        cout << "LIST" << endl;
+        for( auto& i : outList){
+            cout << i << endl;
+        }
+    }
 private:
-    template <typename C>
-    void makeGraph( function<int(C)> comparator, map < string, CNode >& graph, set<string>& m_start){
+    template <typename Comp>
+    void makeGraph( Comp comparator, map < string, CNode >& graph, set<string>& m_start){
 
         for ( auto& i : m_matches ){
             string cont1 = i.first.first, cont2 = i.first.second;
@@ -149,6 +158,8 @@ private:
             }
         }
 
+        outList.push_back(currNode);
+        // going through the nodes relations
         for( auto& i : graph.at( currNode).relations ){
             if( graph.at(i).visited ){
                 graph.at( currNode).visited = false;
