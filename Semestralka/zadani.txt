@@ -1,0 +1,6 @@
+Jako zadání semestrální práce jsem si vybral HTTP server.
+.
+.
+.
+Logování bude obhospodařovat třída CLog. V konfiguračním souboru lze nastavit kam chceme log posílat ( terminal,
+cesta k souboru, apod. ). Třída CLog má metodu "log" která vypíše daný zprávu na příslušný výstup.
