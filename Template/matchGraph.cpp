@@ -51,20 +51,17 @@ public:
         if( m_matches.insert(make_pair( make_pair(contestant1, contestant2), make_pair(result, flipped)) ).second == false )
             throw logic_error("Adding duplicate entry");
 
-        // add nodes to graph
-
-
-
         return *this;
     }
+
     // isOrdered ( comparator )
     template <typename Comp>
-    bool isOrdered ( Comp comparator ){
+    bool isOrdered ( const Comp& comparator ) const{
         map < string, CNode > graph;
         set<string> start;
 
         makeGraph( comparator, graph, start);
-        printGraph(graph);
+       // printGraph(graph);
         if(start.size() != 1)
             return false;
         list<string> outList =  findPath(*start.begin(), 0, graph, list<string>());
@@ -76,7 +73,7 @@ public:
 
     // results ( comparator )
     template <typename Comp>
-    list<string> results ( Comp comparator ){
+    list<string> results ( const Comp& comparator ) const{
         map < string, CNode > graph;
         set<string> start;
 
@@ -84,7 +81,7 @@ public:
         if(start.size() != 1)
             throw logic_error("Multiple starting points");
         list<string> outList =  findPath(*start.begin(), 0, graph, list<string>());
-        printList(outList);
+        //printList(outList);
 
         if(outList.empty())
             throw logic_error("List couldn't be completed");
@@ -92,14 +89,14 @@ public:
             return outList;
     }
 
-    void printMatches(){
+    void printMatches() const{
         cout << "MATCHES" << endl;
         for( auto& i : m_matches){
             cout << i.first.first << " " << i.first.second << endl;
         }
     }
 
-    void printGraph( map < string, CNode >& graph){
+    void printGraph( const map < string, CNode >& graph) const{
         cout << "GRAPH" << endl;
         for( auto& i : graph){
             cout << i.first << " -- ";
@@ -109,7 +106,7 @@ public:
         }
     }
 
-    void printList( list < string >& outList){
+    void printList( const list < string >& outList) const{
         cout << "LIST" << endl;
         for( auto& i : outList){
             cout << i << endl;
@@ -117,7 +114,7 @@ public:
     }
 private:
     template <typename Comp>
-    void makeGraph( Comp comparator, map < string, CNode >& graph, set<string>& m_start){
+    void makeGraph( const Comp& comparator, map < string, CNode >& graph, set<string>& m_start) const{
 
         for ( auto& i : m_matches ){
             string cont1 = i.first.first, cont2 = i.first.second;
@@ -142,7 +139,7 @@ private:
         }
     }
 
-    list<string> findPath( const string& currNode , unsigned int depth, map < string, CNode >& graph, list<string> outList){
+    list<string> findPath( const string& currNode , unsigned int depth, map < string, CNode >& graph, list<string> outList) const{
         graph.at( currNode).visited = true;
         depth ++;
         // terminate reccursion when the graph reaches final node
