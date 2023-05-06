@@ -64,7 +64,14 @@ public:
        // printGraph(graph);
         if(start.size() != 1)
             return false;
-        list<string> outList =  findPath(*start.begin(), 0, graph, list<string>());
+        list<string> outList;
+        try{
+            findPath(*start.begin(), 0, graph, outList);
+        }
+        catch( const logic_error& i){
+            return false;
+        }
+
         if(outList.empty())
             return false;
         else
@@ -80,7 +87,9 @@ public:
         makeGraph( comparator, graph, start );
         if(start.size() != 1)
             throw logic_error("Multiple starting points");
-        list<string> outList =  findPath(*start.begin(), 0, graph, list<string>());
+        list<string> outList;
+        findPath(*start.begin(), 0, graph, outList);
+
         //printList(outList);
 
         if(outList.empty())
@@ -114,7 +123,7 @@ public:
     }
 private:
     template <typename Comp>
-    void makeGraph( const Comp& comparator, map < string, CNode >& graph, set<string>& m_start) const{
+    void makeGraph( const Comp& comparator, map < string, CNode >& graph, set<string>& start) const{
 
         for ( auto& i : m_matches ){
             string cont1 = i.first.first, cont2 = i.first.second;
@@ -122,24 +131,24 @@ private:
                 cont1 = i.first.second, cont2 = i.first.first;
 
             if( graph.insert( make_pair(cont1, CNode() ) ).second)
-                m_start.insert(cont1);
+                start.insert(cont1);
             if( graph.insert( make_pair(cont2, CNode() ) ).second)
-                m_start.insert(cont2);
+                start.insert(cont2);
 
             int result = comparator( i.second.first );
             if(result < 0){
                 graph.at(cont2).relations.insert(cont1);
-                m_start.erase(cont1);
+                start.erase(cont1);
                 continue;
             }
             if(result > 0){
                 graph.at(cont1).relations.insert(cont2);
-                m_start.erase(cont2);
+                start.erase(cont2);
             }
         }
     }
 
-    list<string> findPath( const string& currNode , unsigned int depth, map < string, CNode >& graph, list<string> outList) const{
+    bool findPath( const string& currNode , unsigned int depth, map < string, CNode >& graph, list<string>& outList) const{
         graph.at( currNode).visited = true;
         depth ++;
         // terminate reccursion when the graph reaches final node
@@ -147,33 +156,32 @@ private:
             if( depth == graph.size()){
                 graph.at( currNode).visited = false;
                 outList.push_back(currNode);
-                return outList;
+                return true;
             }
             else{
                 graph.at( currNode).visited = false;
-                return {};
+                return false;
             }
         }
 
-        outList.push_back(currNode);
-        // going through the nodes relations
+        // going through the node relations
+        bool flag = true;
         for( auto& i : graph.at( currNode).relations ){
             if( graph.at(i).visited ){
-                graph.at( currNode).visited = false;
-                return {};
+                throw logic_error("Graph has a cycle");
             }
-            list<string> result = findPath(i, depth, graph, outList);
-            if( ! result.empty() ){
+            if( flag && findPath(i, depth, graph, outList) ){
                 graph.at( currNode).visited = false;
-                return result;
+                outList.push_front(currNode);
+                flag = false;
             }
         }
+        if(! flag)
+            return true;
 
         graph.at( currNode).visited = false;
-        return {};
-
+        return false;
     }
-
 };
 
 #ifndef __PROGTEST__
