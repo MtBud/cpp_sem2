@@ -58,7 +58,7 @@ public:
         return m_id;
     }
 
-    void resize( CRect& winSize ){
+    virtual void resize( CRect& winSize ){
         m_absPos = CRect( m_relPos.m_X * winSize.m_W + winSize.m_X,
                           m_relPos.m_Y * winSize.m_H + winSize.m_Y,
                           m_relPos.m_W * winSize.m_W,
@@ -140,7 +140,7 @@ public:
     };
 
     // changes the relative and absolute positions of itself and all contained elements
-    void resize( CRect& winSize ){
+    void resize( CRect& winSize ) override{
         m_absPos = CRect( m_relPos.m_X * winSize.m_W + winSize.m_X,
                           m_relPos.m_Y * winSize.m_H + winSize.m_Y,
                           m_relPos.m_W * winSize.m_W,
