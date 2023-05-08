@@ -1,0 +1,309 @@
+<!--?xml version="1.0" encoding="utf-8" ?-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml-transitional.dtd">
+<html class=" augzqupvd idc0_343"><head>
+  <title>budskmat@progtest.fit.cvut.cz - ProgTest</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <link href="semestralk_zadani_files/css.css" rel="stylesheet" type="text/css">
+  <script src="semestralk_zadani_files/shared.js" language="JavaScript" type="text/javascript"></script>
+  
+ </head>
+ <body text="#000000" bgcolor="#828273">
+  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+   <tbody><tr height="25">
+    <td bgcolor="#00ff00" align="left"><span class="navLink"><a class="navLink" href="https://progtest.fit.cvut.cz/index.php?X=Main">ProgTest</a>&nbsp;&nbsp;►&nbsp;&nbsp;<a class="navLink" href="https://progtest.fit.cvut.cz/index.php?X=Course&amp;Cou=377">BI-PA2 (22/23 LS)</a>&nbsp;&nbsp;►&nbsp;&nbsp;<a class="navLink" href="https://progtest.fit.cvut.cz/index.php?X=TaskGrp&amp;Cou=377&amp;Tgr=2437">Semestrální úloha</a>&nbsp;&nbsp;►&nbsp;&nbsp;<b>Nástroj: HTTP server</b></span></td>
+    <td bgcolor="#00ff00" align="right"><a class="navLink" href="https://progtest.fit.cvut.cz/index.php?X=Logout">Logout</a></td>
+   </tr>
+  </tbody></table>
+<br>
+
+
+
+
+ <br>
+ <br>
+   <center>
+   <div class="topLayout">
+    <div class="outBox">
+     <table class="header" width="100%" cellspacing="0" cellpadding="0">
+      <tbody><tr>
+       <td class="header"><b>Nástroj: HTTP server</b></td>
+      </tr>
+     </tbody></table>
+    </div>
+   </div>
+  </center>
+ <form name="form1" method="post" action="?X=TaskU&amp;Cou=377&amp;Tgr=2437&amp;Tsk=1051" enctype="multipart/form-data">
+  <center>
+    <div class="topLayout">
+     <div class="outBox">
+      <table id="maintable" width="100%" cellspacing="0" cellpadding="2" border="0">
+       <colgroup><col width="200">
+       <col>
+       <col width="130">
+       </colgroup><tbody><tr>
+        <td class="ltCell" align="left"><b>Termín odevzdání:</b></td>
+        <td class="tCell" align="left"><b>12.06.2023 11:59:59</b></td>
+        <td class="rtCell" id="countdown" align="right">2999990.912 sec</td>
+       </tr>
+
+       <tr>
+        <td class="lCell" align="left"><b>Hodnocení:</b></td>
+        <td class="rCell" colspan="2" align="left"><b>0.0000</b></td>
+       </tr>
+       <tr>
+        <td class="lCell" align="left"><b>Max. hodnocení:</b></td>
+        <td class="rCell" colspan="2" align="left"><b>12.0000</b> (bez bonusů)</td>
+       </tr>
+       <tr>
+        <td class="lCell" align="left"><b>Odevzdaná řešení:</b></td>
+        <td class="rCell" colspan="2" align="left">0 /  20</td>
+       </tr>
+       <tr>
+        <td class="lbCell" align="left"><b>Nápovědy:</b></td>
+        <td class="rbCell" colspan="2" align="left">0 / 5</td>
+       </tr>
+       <tr>
+
+        <td class="lrtbCell" colspan="3" align="left"><div class="paragraph">
+<p><em>Tato semestrální práce patří do kategorie konzolových utilit. Vaším cílem je vytvořit <strong>nástroj</strong>,
+ který uživatel z terminálu spustí (s různými parametry). Případné 
+parametry nástroje se nesnažte definovat přímo v kódu (a to ani pomocí 
+konstant). Umístěte je do konfiguračních souborů (jednoho nebo více), 
+které váš program bude načítat.</em></p>
+</div>
+<div class="paragraph">
+<p>Úkolem je naprogramovat jednoduchý HTTP server s podporou různých 
+generátorů obsahu. Alternativně můžete implementovat i jiný známý 
+protokol, který se vzhledem k požadavkům hodí (př. FTP server, …). Pokud
+ si nejste jisti, diskutujte nejprve s pověřenou osobou pro semestrální 
+práce.</p>
+</div>
+<div class="paragraph">
+<p>Nástroj musí implementovat:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Poskytování obsahu následující druhu:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>statický obsah (konkrétní soubor),</p>
+</li>
+<li>
+<p>výpis obsahu adresáře (pokud je v nastavení povoleno),</p>
+</li>
+<li>
+<p>spuštění skriptu (př. <code>sh</code>, <code>c</code>, <code>c++</code>, …),</p>
+</li>
+<li>
+<p>zaslání signálu pro ukončení serveru,</p>
+</li>
+<li>
+<p>neexistující stránka.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Server musí umožnit:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>získávání statických souborů pomocí GET metody,</p>
+</li>
+<li>
+<p>ukládání statických souborů pomocí POST metody.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Nástroj musí být konfigurovatelný ze souboru:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>parametry sítě (alespoň IP adresa, port, dále příp. doména, …),</p>
+</li>
+<li>
+<p>omezení práce s konkrétními adresáři (konfigurace obsahuje na jaké adresy se mapují jednotlivé adresáře),</p>
+</li>
+<li>
+<p>log přenosů (jednotlivé požadavky a zkrácené odpovědi),</p>
+</li>
+<li>
+<p>definice přípon pro zpracování pomocí skriptu (př. <code>.c</code>, <code>.cpp</code> pomocí <code>g++</code> a následně <code>./a.out</code>, <code>.sh</code> pomocí <code>sh …</code>),</p>
+</li>
+<li>
+<p>na jakou adresu (příp. metodu) se mapuje vypnutí serveru.</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Kde lze využít polymorfismus? <em>(doporučené)</em></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>druh zpracování souboru: adresář, statický soubor (HTML, obrázek, …), skript, nepodporovaný formát, …</p>
+</li>
+<li>
+<p>různé chování metod pro zpracování obsahu: GET, POST, PUT, DELETE, …</p>
+</li>
+<li>
+<p>logování: na konzoli, do souboru, do databáze, …</p>
+</li>
+<li>
+<p>styl logování: jednoduchá hlavička, kompletní požadavek (např. pouze pro chybové stavy), statistika přístupů, …</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Další informace:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Rozšířením může být například podpora HTTPS nebo rozšíření o 
+vícevláknové zpracování. V takovém případě bude vhodné přidat možnost 
+zapnout a vypnout danou funkcionalitu pomocí vhodného přepínače.</p>
+</li>
+</ul>
+</div></td> 
+
+       </tr>
+
+
+
+
+
+
+
+       <tr>
+        <td colspan="3" class="lrtCell">Tato úloha je hodnocena 
+automatem a následně vyučujícím. Nejprve úlohu odevzdejte a odlaďte na 
+automatu, pak jedno Vámi vybrané řešení předejte k ohodnocení 
+vyučujícím. Předání úlohy k hodnocení učitelem se provede tlačítkem 
+"Předat vyučujícímu" u zvoleného řešení. Vyučující bude hodnotit pouze 
+jedno Vaše řešení, vyučující nezačně hodnotit dokud mu úlohu nepčředáte.
+ Dokud není úloha ohodnocena jak automatem tak i učitelem, nejsou 
+přidělené žádné body (jsou zobrazována pouze dílčí hodnocení v 
+procentech).</td>
+       </tr>
+       <tr>
+ 
+        <td class="lbCell" valign="top" align="left"><b>Odevzdat:</b></td>
+        <td class="bCell" valign="top" align="left"><input type="file" class="std" name="FILE"></td>
+        <td class="rbCell" valign="top"><div class="w120 outButton"><input type="submit" name="S" value="Odevzdat" class="updButton"></div></td>
+ 
+       </tr>
+
+
+
+
+
+
+      </tbody></table>
+     </div>
+    </div>
+
+
+
+
+
+
+  </center>
+ </form>
+
+
+
+
+
+
+
+
+<script language="javascript" type="text/javascript">
+<!--
+
+var deadLine = new Date ( 1686563999 * 1000 );
+
+function CBpressed ( num )
+ {
+   var pre, cb;
+
+   cb = MM_findObj ( "cb_" + num );
+   pre = MM_findObj ( "pre_" + num );
+   if ( cb != null && pre != null )
+    {
+      pre . style . display = cb . checked ? "block" : "none";
+    }
+ }
+
+function unlockAdvice ( url )
+ {
+   if ( confirm ( 'Máte k dispozici pouze omezený počet nápověd. Navíc, použití nápovědy může snížit bodové hodnocení. Opravdu chcete zpřístupnit tuto nápovědu?' ) )
+    this . location = url;
+ }
+
+function setCountdown ( )
+{
+  var d = new Date ();
+  var x = ( deadLine . getTime () - d . getTime () );
+  var tgt = document . getElementById ( "countdown" );
+
+  if ( x > 0 )
+  {
+    var s = Math . floor ( x / 1000 );
+    var ms = (x % 1000) + "";
+  
+    while ( ms . length  < 3 ) ms = "0" + ms;
+  
+    tgt . innerHTML = s + "." + ms + " sec";
+  
+    window . setTimeout ( setCountdown, 117 );
+  }
+  else
+    tgt . innerHTML = '&nbsp;';
+}
+
+function showRefSolution ( )
+ {
+   var t = document . getElementById ( "reftable" );
+   var x = document . getElementsByName ( "SHOW_REF" )[0];
+
+   if ( ! x ) return;
+   var r1 = t . rows[1], r2 = t . rows[2];
+
+   if ( x . checked )
+    {
+      r1 . style . display = "";
+      if ( r2 ) r2 . style . display = "";
+    }
+   else
+    {
+      r1 . style . display = "none";
+      if ( r2 ) r2 . style . display = "none";
+    }
+ }
+
+ 
+
+
+setCountdown ();
+showRefSolution ();
+
+// -->
+</script>
+
+
+
+
+
+ 
+
+
+</body></html>
+<!-- Template run time: 0.010059833526611 sec -->

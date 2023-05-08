@@ -1,0 +1,13 @@
+protocol version http 1.1
+
+basic http methods
+    - GET, POST, PUT, DELETE
+    - maybe implement more than the two required - GET, POST
+
+http headers
+    - implementing authorization might be interesting
+
+http status codes
+    - 200 OK
+    - 404 not found
+    - 500 internal server error
