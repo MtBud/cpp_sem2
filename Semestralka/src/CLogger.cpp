@@ -1,13 +1,15 @@
 #include <string>
+#include <iostream>
+#include "CLogger.h"
 
-class CLogger{
-public:
-    void log ( std::string );
+void CLogger::log ( const std::string& message){
+    std::cout << message << std::endl;
+}
 
-private:
-    void database ( std::string );
+/*
+void CLogger::database ( const std::string& message );
 
-    void file ( std::string );
+void CLogger::file ( const std::string& message );
 
-    void terminal ( std::string );
-};
+void CLogger::terminal ( const std::string& message );
+*/

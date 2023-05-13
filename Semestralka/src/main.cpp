@@ -1,7 +1,8 @@
 #include "CServer.h"
 int main(){
     CServer server;
-    server.start();
+    int srvrSocket = server.start();
+    server.serve( srvrSocket );
 
     return 1;
 }

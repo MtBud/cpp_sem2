@@ -4,12 +4,13 @@
 class CLogger{
 public:
     // function only acts as a switch to call one or more of the methods
-    void log ( std::string );
+    void log ( const std::string& message );
+
 
 private:
-    void database ( std::string );
+    void database ( const std::string& message );
 
-    void file ( std::string );
+    void file ( const std::string& message );
 
-    void terminal ( std::string );
+    void terminal ( const std::string& message );
 };

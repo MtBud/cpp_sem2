@@ -1,10 +1,10 @@
 #pragma once
-#include <string>
 
 class CServer{
 public:
-    void start();
+    int start();
+
+    void serve( int srvrSocket );
 
     void shutdown();
-
 };

@@ -3,6 +3,6 @@
 
 
 CConfig::CConfig(){
-    std::ifstream f("config.json");
+    std::ifstream f("src/config.json");
     data = nlohmann::json::parse(f);
 }

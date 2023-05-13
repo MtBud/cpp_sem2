@@ -1,7 +1,8 @@
 Jako zadání semestrální práce jsem si vybral HTTP server.
 Hlavní třídou projektu je CServer. CServer obhospodařuje připojování uživatelů. CServer má celkem sebedeskriptivní
-metody. Metoda start() spustí odposlech na definovaném portu a stará se o jednotlivé uživatele. Metoda shutdown vypne
-server. Vypínání serveru bude možno udělat buď z konzole a nebo posláním zprávy s parametry definovanými v config soboru.
+metody. Metoda start() spustí odposlech na definovaném portu. Metoda serve se stará o jednotlivé uživatele. Metoda
+shutdown vypne server a ukončí program. Vypínání serveru bude možno udělat buď z konzole a nebo posláním zprávy s
+parametry definovanými v config soboru.
 
 Pro jednotlivé serverové utility je tu třída CUtils. CUtils obhospodařuje jednotlivé konzolové příkazy.
 Metoda display umožní zobrazit soubor, metoda content umožní vypsat obsah adresáře a metoda execute spustí skript.
