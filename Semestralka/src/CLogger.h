@@ -1,8 +1,9 @@
+#pragma once
 #include <string>
 
 class CLogger{
 public:
-    // function only acts as a switch to call one of the corresponding methods
+    // function only acts as a switch to call one or more of the methods
     void log ( std::string );
 
 private:

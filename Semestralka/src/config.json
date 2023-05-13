@@ -1,0 +1,32 @@
+{
+  "network": {
+    "port": 8080,
+    "address": "127.0.0.5",
+    "domain": null
+  },
+
+  "restricted": [
+      "./scripts/"
+  ],
+
+  "log": {
+    "console": [true, true],
+    "file": [null, true],
+    "database": [null, true]
+  },
+
+  "scripts": {
+    ".c": "g++ path; path/a.out",
+    ".cpp": "g++ path; path/a.out",
+    ".sh": "./path",
+    ".py": "python3 path"
+  },
+
+  "shutdown": {
+    "password": "admin-passwd",
+    "method": "PUT",
+    "address": "127.0.0.25"
+  },
+
+  "editor": null
+}

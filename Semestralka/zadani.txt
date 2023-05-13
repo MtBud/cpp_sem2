@@ -1,6 +1,19 @@
 Jako zadání semestrální práce jsem si vybral HTTP server.
-.
-.
-.
-Logování bude obhospodařovat třída CLogger. V konfiguračním souboru lze nastavit kam chceme log posílat ( terminal,
-cesta k souboru, databáze ). Třída CLog má metodu "log" která vypíše daný zprávu na příslušný výstup.
+Hlavní třídou projektu je CServer. CServer obhospodařuje připojování uživatelů. CServer má celkem sebedeskriptivní
+metody. Metoda start() spustí odposlech na definovaném portu a stará se o jednotlivé uživatele. Metoda shutdown vypne
+server. Vypínání serveru bude možno udělat buď z konzole a nebo posláním zprávy s parametry definovanými v config soboru.
+
+Pro jednotlivé serverové utility je tu třída CUtils. CUtils obhospodařuje jednotlivé konzolové příkazy.
+Metoda display umožní zobrazit soubor, metoda content umožní vypsat obsah adresáře a metoda execute spustí skript.
+
+Data z konfiguračního souboru bude možno získavat pomocí struktury CConfig. CConfig načte data z konfiguračního souboru
+který je ve formátu .json a udělá z něj jednoduchý objekt, ze kterého pak pomocí [] můžu získávat jednoduše data.
+
+Resolvování HTTP metod a zpráv bude obhospodařovat třída CHTTPMethods. CHTTPMethods je abstraktní třída od které se
+budou odvíjet třídy pro jednotlivé HTTP metody. Objekty těchto tříd se uloží do mapy a jako klíč se použije
+název metody ("GET", "POST"...). Když pak přijde zpráva jednoduše se v mapě najde korespondující objekt
+na kterém se zavolá metoda incoming().
+
+Logování bude obhospodařovat třída CLogger. V konfiguračním souboru lze zapnout/vypnout vypysování do souboru či
+konzole. Lze zde také u jedntotlivých rozhraní nastavit zkrácený či plný výpis. Můžeme tedy logovat jen do konzole,
+jen do souboru, obojího naráz či např. i zkrácený výpis do konzole, ale plný do souboru.
