@@ -5,7 +5,8 @@ shutdown vypne server a ukončí program. Vypínání serveru bude možno uděla
 parametry definovanými v config soboru.
 
 Pro jednotlivé serverové utility je tu třída CUtils. CUtils obhospodařuje jednotlivé konzolové příkazy.
-Metoda display umožní zobrazit soubor, metoda content umožní vypsat obsah adresáře a metoda execute spustí skript.
+Příkaz display umožní zobrazit soubor, příkaz content umožní vypsat obsah adresáře a příkaz execute spustí skript.
+Nakonec příkaz config umožní měnit konfigurační soubor.
 
 Data z konfiguračního souboru bude možno získavat pomocí struktury CConfig. CConfig načte data z konfiguračního souboru
 který je ve formátu .json a udělá z něj jednoduchý objekt, ze kterého pak pomocí [] můžu získávat jednoduše data.

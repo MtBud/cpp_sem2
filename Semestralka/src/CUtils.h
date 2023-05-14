@@ -3,9 +3,25 @@
 
 class CUtils{
 public:
-    void display( std::string ) const;
+    virtual void launch( const std::string& argument ) = 0;
+};
 
-    void content( std::string ) const;
+class CDisplay : public CUtils{
+public:
+    void launch( const std::string& argument ) override;
+};
 
-    void execute( std::string ) const;
+class CContent : public CUtils{
+public:
+    void launch( const std::string& argument ) override ;
+};
+
+class CExecute : public CUtils{
+public:
+    void launch( const std::string& argument ) override;
+};
+
+class CChangeConfig : public CUtils{
+public:
+    void launch( const std::string& argument ) override;
 };

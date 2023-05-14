@@ -1,8 +1,12 @@
+#include <thread>
+#include <iostream>
 #include "CServer.h"
 int main(){
-    CServer server;
-    int srvrSocket = server.start();
-    server.serve( srvrSocket );
+    // int srvrSocket = CServer::start();
+    CServer::console();
 
+    // std::thread consoleThread( &CServer::console);
+    // CServer::serve(srvrSocket);
+    std::cout << "bruh" << std::endl;
     return 1;
 }

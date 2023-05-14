@@ -1,10 +1,17 @@
 #pragma once
+#include <string>
+#include <vector>
 
 class CServer{
 public:
-    int start();
+    static int start();
 
-    void serve( int srvrSocket );
+    static void serve( int srvrSocket );
 
-    void shutdown();
+    static void console();
+
+    static void shutdown( int srvrSocket, int cliSocket );
+
+private:
+    static std::vector<std::string> parse();
 };

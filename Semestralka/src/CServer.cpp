@@ -2,13 +2,14 @@
 #include <cstdlib>
 #include <exception>
 #include <iostream>
-#include <string>
+#include <map>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
 #include "CServer.h"
 #include "CConfig.h"
 #include "CLogger.h"
+#include "CUtils.h"
 
 #define BUFFER_SIZE 10240
 
@@ -42,7 +43,6 @@ int CServer::start(){
     }
 
     logger.log("Server initialized");
-
     return srvrSocket;
 }
 
@@ -52,6 +52,7 @@ void CServer::serve( int srvrSocket ){
     socklen_t socklen;
 
     while(true){
+        // accept a connection
         int cliSocket = accept( srvrSocket, (struct sockaddr *) &remote_address, &socklen);
         if( cliSocket < 0 ){
             close(srvrSocket);
@@ -59,10 +60,10 @@ void CServer::serve( int srvrSocket ){
         }
         logger.log("Connection made");
 
-
+        // recieve data from connection
         char buffer[BUFFER_SIZE];
         while(true){
-            int bytesRead = recv(cliSocket, buffer, BUFFER_SIZE - 1, 0);
+            unsigned int bytesRead = recv(cliSocket, buffer, BUFFER_SIZE - 1, 0);
             buffer[bytesRead] = '\0';
             std::cout << buffer << std::endl;
 
@@ -74,6 +75,56 @@ void CServer::serve( int srvrSocket ){
     }
 }
 
-void CServer::shutdown(){
+std::vector<std::string> CServer::parse(){
+    std::string input;
+    std::vector<std::string> parsed;
+    size_t first;
+    getline(std::cin, input, '\n');
+    while(true){
+        first = input.find(' ');
+        if(first == std::string::npos){
+            parsed.push_back(input);
+            break;
+        }
+        parsed.push_back(input.substr(0,first));
+        input.erase(0,first + 1);
+    }
 
+    return parsed;
+}
+
+void CServer::console(){
+    std::map <std::string, CUtils* > utils;
+    std::vector<std::string> parsed;
+
+    utils = {{"display", new(CDisplay)},
+             {"content", new(CContent)},
+             {"execute", new(CExecute)},
+             {"config", new(CChangeConfig)}};
+    while(true){
+        parsed = CServer::parse();
+
+
+        if( utils.find(parsed[0]) == utils.end()){
+            std::cout << "Unknown command" << std::endl << std::endl;
+            continue;
+        }
+
+        if( parsed.size() < 2){
+            std::cout << "No arguments" << std::endl << std::endl;
+            continue;
+        }
+
+        for(unsigned int i = 1; i < parsed.size(); i ++)
+            utils[parsed[0]]->launch(parsed[i]);
+
+    }
+}
+
+
+void CServer::shutdown( int srvrSocket, int cliSocket = 0 ){
+    close(srvrSocket);
+    if(cliSocket > 0)
+        close(cliSocket);
+    exit(EXIT_SUCCESS);
 }
