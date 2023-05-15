@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include "CHTTPMethods.h"
 #include "CServer.h"
 #include "CConfig.h"
 #include "CLogger.h"
@@ -26,7 +27,6 @@ int CServer::start(){
 
     // bind socket to port
     struct sockaddr_in sockAddress;
-    bzero(&sockAddress, sizeof(sockAddress));
     sockAddress.sin_family = AF_INET;
     sockAddress.sin_port = htons(conf.data["network"]["port"]);
     sockAddress.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -46,10 +46,30 @@ int CServer::start(){
     return srvrSocket;
 }
 
+std::vector<std::string> CServer::parseHTTP( const char* bytes ){
+    std::vector<std::string> parsed;
+    std::string data = bytes;
+    while(true){
+        size_t pos = data.find("\r\n");
+        if(pos == std::string::npos){
+            parsed.push_back(data);
+            break;
+        }
+        parsed.push_back(data.substr(0,pos));
+        data.erase(0,pos + 1);
+    }
+
+    return parsed;
+}
+
 void CServer::serve( int srvrSocket ){
     CLogger logger;
     struct sockaddr_in remote_address;
     socklen_t socklen;
+    std::map <std::string, CHTTPMethods* > methods;
+    methods = {{"GET", new(CGet)},
+               {"POST", new(CPost)}};
+
 
     while(true){
         // accept a connection
@@ -64,18 +84,29 @@ void CServer::serve( int srvrSocket ){
         char buffer[BUFFER_SIZE];
         while(true){
             unsigned int bytesRead = recv(cliSocket, buffer, BUFFER_SIZE - 1, 0);
+            if( bytesRead == 0){
+                logger.log("Connection ended abruptly");
+                break;
+            }
             buffer[bytesRead] = '\0';
             std::cout << buffer << std::endl;
 
-            if (buffer == std::string("konec"))
-                exit(EXIT_SUCCESS);
-        }
+            std::vector< std::string > request = parseHTTP( buffer );
 
+            if( methods.find(request[0]) == methods.end()){
+                //throw std::logic_error("Unknown HTTP method");
+                std::cout << "Unknown HTTP method" << std::endl;
+                continue;
+            }
+
+            methods[request]->incoming(buffer);
+
+        }
 
     }
 }
 
-std::vector<std::string> CServer::parse(){
+std::vector<std::string> CServer::parseConsole(){
     std::string input;
     std::vector<std::string> parsed;
     size_t first;
@@ -102,21 +133,16 @@ void CServer::console(){
              {"execute", new(CExecute)},
              {"config", new(CChangeConfig)}};
     while(true){
-        parsed = CServer::parse();
-
+        std::cout << "Cherokee: ";
+        parsed = CServer::parseConsole();
 
         if( utils.find(parsed[0]) == utils.end()){
             std::cout << "Unknown command" << std::endl << std::endl;
             continue;
         }
 
-        if( parsed.size() < 2){
-            std::cout << "No arguments" << std::endl << std::endl;
-            continue;
-        }
+        utils[parsed[0]]->launch(parsed);
 
-        for(unsigned int i = 1; i < parsed.size(); i ++)
-            utils[parsed[0]]->launch(parsed[i]);
 
     }
 }
