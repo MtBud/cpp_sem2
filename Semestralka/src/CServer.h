@@ -13,5 +13,7 @@ public:
     static void shutdown( int srvrSocket, int cliSocket );
 
 private:
-    static std::vector<std::string> parse();
+    static std::vector<std::string> parseConsole();
+
+    static std::vector<std::string> parseHTTP( const char* bytes );
 };

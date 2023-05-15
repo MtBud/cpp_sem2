@@ -28,5 +28,6 @@
     "address": "127.0.0.25"
   },
 
-  "editor": null
+  "editor": null,
+  "root": "./assets/"
 }
