@@ -51,7 +51,8 @@ std::vector<std::string> CServer::parse( std::string data, const std::string& de
     while(true){
         size_t pos = data.find(delimiter);
         if(pos == std::string::npos){
-            parsed.push_back(data);
+            if( ! data.empty() )
+                parsed.push_back(data);
             break;
         }
         parsed.push_back(data.substr(0,pos));
@@ -89,16 +90,16 @@ void CServer::serve( int srvrSocket ){
             }
             buffer[bytesRead] = '\0';
             std::cout << buffer << std::endl;
+            std::vector< std::string > request = parse( buffer, "\n" );
+            std::vector< std::string > requestLine = parse( request[0], " ");
 
-            std::vector< std::string > request = parse( buffer, "\r\n" );
-
-            if( methods.find(request[0]) == methods.end()){
+            if( methods.find(requestLine[0]) == methods.end()){
                 //throw std::logic_error("Unknown HTTP method");
                 std::cout << "Unknown HTTP method" << std::endl;
                 continue;
             }
 
-            methods[request[0]]->incoming(buffer);
+            methods[requestLine[0]]->incoming(buffer);
 
         }
 

@@ -3,7 +3,7 @@
 
 class CHTTPMethods{
 public:
-    virtual void incoming( const std::string& request);
+    virtual void incoming( const std::string& request) = 0;
 };
 
 class CGet : public CHTTPMethods{
