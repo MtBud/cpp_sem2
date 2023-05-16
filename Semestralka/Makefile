@@ -19,5 +19,5 @@ CConfig.o: src/CConfig.cpp src/CConfig.h libs/json.hpp
 CUtils.o: src/CUtils.h src/CUtils.cpp src/CConfig.h
 	g++ -Wall -pedantic -c src/CUtils.cpp -o CUtils.o
 
-CHTTPMethods.o: src/CHTTPMethods.h src/CHTTPMethods.cpp src/CUtils.h
+CHTTPMethods.o: src/CHTTPMethods.h src/CHTTPMethods.cpp src/CUtils.h src/CConfig.h
 	g++ -Wall -pedantic -c src/CHTTPMethods.cpp -o CHTTPMethods.o

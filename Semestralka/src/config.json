@@ -6,7 +6,9 @@
   },
 
   "restricted": [
-      "./scripts/"
+      "/scripts/",
+      "/admin/",
+      "/dev/"
   ],
 
   "log": {

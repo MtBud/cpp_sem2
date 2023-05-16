@@ -99,7 +99,7 @@ void CServer::serve( int srvrSocket ){
                 continue;
             }
 
-            methods[requestLine[0]]->incoming(buffer);
+            methods[requestLine[0]]->incoming( request, requestLine[1], cliSocket );
 
         }
 
