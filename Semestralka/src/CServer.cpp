@@ -46,11 +46,10 @@ int CServer::start(){
     return srvrSocket;
 }
 
-std::vector<std::string> CServer::parseHTTP( const char* bytes ){
+std::vector<std::string> CServer::parse( std::string data, const std::string& delimiter ){
     std::vector<std::string> parsed;
-    std::string data = bytes;
     while(true){
-        size_t pos = data.find("\r\n");
+        size_t pos = data.find(delimiter);
         if(pos == std::string::npos){
             parsed.push_back(data);
             break;
@@ -91,7 +90,7 @@ void CServer::serve( int srvrSocket ){
             buffer[bytesRead] = '\0';
             std::cout << buffer << std::endl;
 
-            std::vector< std::string > request = parseHTTP( buffer );
+            std::vector< std::string > request = parse( buffer, "\r\n" );
 
             if( methods.find(request[0]) == methods.end()){
                 //throw std::logic_error("Unknown HTTP method");
@@ -99,29 +98,11 @@ void CServer::serve( int srvrSocket ){
                 continue;
             }
 
-            methods[request]->incoming(buffer);
+            methods[request[0]]->incoming(buffer);
 
         }
 
     }
-}
-
-std::vector<std::string> CServer::parseConsole(){
-    std::string input;
-    std::vector<std::string> parsed;
-    size_t first;
-    getline(std::cin, input, '\n');
-    while(true){
-        first = input.find(' ');
-        if(first == std::string::npos){
-            parsed.push_back(input);
-            break;
-        }
-        parsed.push_back(input.substr(0,first));
-        input.erase(0,first + 1);
-    }
-
-    return parsed;
 }
 
 void CServer::console(){
@@ -134,14 +115,16 @@ void CServer::console(){
              {"config", new(CChangeConfig)}};
     while(true){
         std::cout << "Cherokee: ";
-        parsed = CServer::parseConsole();
+        std::string input;
+        getline(std::cin, input, '\n');
+        parsed = CServer::parse( input, " ");
 
         if( utils.find(parsed[0]) == utils.end()){
             std::cout << "Unknown command" << std::endl << std::endl;
             continue;
         }
 
-        utils[parsed[0]]->launch(parsed);
+        utils[parsed[0]]->launch(parsed, std::cout);
 
 
     }
