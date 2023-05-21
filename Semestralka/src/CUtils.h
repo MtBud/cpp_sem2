@@ -15,7 +15,6 @@ public:
 class CContent : public CUtils{
 public:
     void launch( const std::vector<std::string>& arguments, std::ostream& out ) override ;
-private:
     static void list( const std::string& root, const std::string& directory, std::ostream& out );
 };
 

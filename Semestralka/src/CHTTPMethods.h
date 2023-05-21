@@ -7,7 +7,7 @@ public:
     virtual void incoming( std::vector< std::string >& request, const std::string& path, int cliSocket ) = 0;
 private:
     void authenticate();
-    void reply( int cliSocket, int status, const std::string& connection a);
+    void reply( int cliSocket, const std::string& status, const std::string& connection, const std::string& path );
 };
 
 class CGet : public CHTTPMethods{

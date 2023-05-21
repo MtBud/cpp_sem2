@@ -1,5 +1,7 @@
 #include <iostream>
+#include <ostream>
 #include <sys/socket.h>
+#include <filesystem>
 #include "CConfig.h"
 #include "CHTTPMethods.h"
 #include "CUtils.h"
@@ -36,13 +38,25 @@ void CHTTPMethods::authenticate(){
 
 // message number -- 200 ok, 403, 404
 // connection -- close, keep alive
-void CHTTPMethods::reply( int cliSocket, int status, const std::string& connection ){
-    std::string message;
-    message.append("HTTP/1.1 ");
-    message.append(std::to_string(status));
+void CHTTPMethods::reply( int cliSocket, const std::string& status, const std::string& connection, const std::string& path = "" ){
+    CConfig conf;
+    std::stringstream message;
+    message << "HTTP/1.1 " << status << std::endl;
+
+    if( std::filesystem::is_directory(path) ){
+        message << "Content-Type: text/html; charset=UTF-8" << std::endl;
+        std::stringstream tmp;
+        CContent::list( conf.data["root"], path, tmp );
+        std::string dirContent = tmp.str();
+        message << "Content-Length: " << dirContent.size() << std::endl;
+    }
+
+    message << "Accept-Ranges: bytes" << std::endl;
+    message << "Connection: " << connection << std::endl;
 
 
-    const char* buffer = message.c_str();
+    std::string tmp = message.str();
+    const char* buffer = tmp.c_str();
     if(send(cliSocket, buffer, strlen(buffer), MSG_NOSIGNAL) < 0){
         throw std::runtime_error("Unable to send data to client");
     }
