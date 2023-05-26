@@ -85,3 +85,11 @@ std::stringstream& CHTTPMethods::reply( int cliSocket, const std::string& status
         throw std::runtime_error("Unable to send data to client");
     }
 }
+
+void CHTTPMethods::badRequest( int cliSocket ){
+    std::stringstream out;
+    out << "HTTP/1.1 " << 400 << " Bad Request" << std::endl;
+    out << "Connection: " << "keep-alive" << std::endl;
+    size_t length = out.str().length();
+    send( cliSocket, out.str().c_str(), length, 0);
+};
