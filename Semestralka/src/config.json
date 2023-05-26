@@ -1,7 +1,7 @@
 {
   "network": {
     "port": 8080,
-    "address": "127.0.0.5",
+    "address": "127.0.0.1",
     "domain": null
   },
 
@@ -24,7 +24,7 @@
     ".py": "python3 path"
   },
 
-  "shutdown": {
+  "authentication": {
     "password": "admin-passwd",
     "method": "PUT",
     "address": "127.0.0.25"

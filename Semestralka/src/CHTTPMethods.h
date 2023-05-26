@@ -4,29 +4,29 @@
 
 class CHTTPMethods{
 public:
-    virtual void incoming( std::vector< std::string >& request, const std::string& path, int cliSocket ) = 0;
+    virtual std::stringstream& incoming( std::map< std::string, std::string >& headers, const std::string& path, std::stringstream& message ) = 0;
 private:
     void authenticate();
-    void reply( int cliSocket, const std::string& status, const std::string& connection, const std::string& path );
+    std::stringstream& reply( int cliSocket, const std::string& status, const std::string& connection, const std::string& path );
 };
 
 class CGet : public CHTTPMethods{
 public:
-    void incoming( std::vector< std::string >& request, const std::string& path, int cliSocket ) override;
+    std::stringstream& incoming( std::map< std::string, std::string >& headers, const std::string& path, std::stringstream& message ) override;
 };
 
 class CPost : public CHTTPMethods{
 public:
-    void incoming( std::vector< std::string >& request, const std::string& path, int cliSocket ) override;
+    std::stringstream& incoming( std::map< std::string, std::string >& headers, const std::string& path, std::stringstream& message ) override;
 };
 
 class CPut : public CHTTPMethods{
 public:
-    void incoming( std::vector< std::string >& request, const std::string& path, int cliSocket ) override;
+    std::stringstream& incoming( std::map< std::string, std::string >& headers, const std::string& path, std::stringstream& message ) override;
 };
 
 class CDelete : public CHTTPMethods{
 public:
-    void incoming( std::vector< std::string >& request, const std::string& path, int cliSocket ) override;
+    std::stringstream& incoming( std::map< std::string, std::string >& headers, const std::string& path, std::stringstream& message ) override;
 };
 

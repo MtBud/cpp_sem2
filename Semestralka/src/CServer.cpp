@@ -92,6 +92,12 @@ void CServer::serve( int srvrSocket ){
             std::cout << buffer << std::endl;
             std::vector< std::string > request = parse( buffer, "\n" );
             std::vector< std::string > requestLine = parse( request[0], " ");
+            std::map< std::string, std::string > headers;
+            for( unsigned int i = 1; i < request.size(); i++){
+                std::vector< std::string > header;
+                header = parse(request[i], ": ");
+                headers.insert(std::pair(header[0], header[1] ) );
+            }
 
             if( methods.find(requestLine[0]) == methods.end()){
                 //throw std::logic_error("Unknown HTTP method");
@@ -99,7 +105,10 @@ void CServer::serve( int srvrSocket ){
                 continue;
             }
 
-            methods[requestLine[0]]->incoming( request, requestLine[1], cliSocket );
+            std::stringstream message;
+            methods[requestLine[0]]->incoming( headers, requestLine[1], message );
+            size_t length = message.str().length();
+            send( cliSocket, message.str().c_str(), length, 0);
 
         }
 
