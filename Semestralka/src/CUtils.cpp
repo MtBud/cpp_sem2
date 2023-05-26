@@ -30,11 +30,11 @@ void CContent::launch( const std::vector<std::string>& arguments, std::ostream& 
     list(root, arguments[1], out);
 }
 
-void CContent::list( const std::string& root, const std::string& directory, std::ostream& out ){
+void CContent::list( const std::string& root, const std::string& directory, std::ostream& out = std::cout ){
     try {
         for( const auto &entry: std::filesystem::directory_iterator(root + directory) ){
             std::string currdir = entry.path();
-            std::cout << currdir.substr(currdir.find_last_of('/') + 1) << std::endl;
+            out << currdir.substr(currdir.find_last_of('/') + 1) << std::endl;
         }
     }
     catch( const std::exception& e ){

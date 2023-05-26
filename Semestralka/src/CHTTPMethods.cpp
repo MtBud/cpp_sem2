@@ -22,12 +22,24 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
         }
     }
 
-
-
-    // 404 file doesn't exist
+    // 404 path doesn't exist
     if( ! std::filesystem::exists(path) ){
         message << "HTTP/1.1 " << 404 << " Not Found" << std::endl;
         message << "Connection: " << "keep-alive" << std::endl;
+        return message;
+    }
+
+    if( std::filesystem::is_directory(path) ){
+        message << "HTTP/1.1 " << 200 << " OK" << std::endl;
+        message << "Connection: " << "keep-alive" << std::endl;
+        message << "Content-Type: text; charset=UTF-8" << std::endl;
+        std::stringstream tmp;
+        CContent::list( std::string( conf.data["root"] ), path, tmp );
+        size_t length = tmp.str().length();
+        message << "Content-Length: " << length << std::endl;
+        message << std::endl;
+
+        message << tmp.str();
         return message;
     }
 }
