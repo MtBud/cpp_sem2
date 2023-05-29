@@ -9,7 +9,6 @@ public:
     static void badRequest( int cliSocket );
 private:
     void authenticate();
-    std::stringstream& sendFile( const std::filesystem::path& path );
 };
 
 class CGet : public CHTTPMethods{

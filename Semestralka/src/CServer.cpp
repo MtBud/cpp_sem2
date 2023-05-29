@@ -91,7 +91,13 @@ void CServer::serve( int srvrSocket ){
             }
             buffer[bytesRead] = '\0';
             std::cout << buffer << std::endl;
-            std::vector< std::string > request = parse( buffer, "\n" );
+            std::string bytes = buffer;
+            if( bytes.find_last_of("\r\n\r\n") == std::string::npos ){
+                CHTTPMethods::badRequest( cliSocket );
+                continue;
+            }
+            bytes = bytes.substr( 0, bytes.size() - 4);
+            std::vector< std::string > request = parse( bytes, "\r\n" );
             std::vector< std::string > requestLine = parse( request[0], " ");
             std::map< std::string, std::string > headers;
             // make map of headers
