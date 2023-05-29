@@ -7,14 +7,16 @@
 #include "CConfig.h"
 #include "CHTTPMethods.h"
 #include "CUtils.h"
+#include "CLogger.h"
 
 #define BUFFER_SIZE 10240
 
 
-std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& path, std::stringstream& message ){
+std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& localPath, std::stringstream& message ){
     CConfig conf;
+    CLogger logger;
     for( auto& i : conf.data["restricted"]){
-        if( path.native().find(i) == 0){
+        if( localPath.native().find(i) == 0){
             // check if correct password has been provided
             if( headers["Authorization"] != std::string("Basic ").append(conf.data["authentication"]["password"]) ){
                 message << "HTTP/1.1 " << 401 << " Unauthorized" << std::endl;
@@ -24,10 +26,15 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
         }
     }
 
+    std::string rootDir = conf.data["root"];
+    std::filesystem::path path = rootDir;
+    path += localPath;
+
     // 404 path doesn't exist
     if( ! std::filesystem::exists(path) ){
         message << "HTTP/1.1 " << 404 << " Not Found" << std::endl;
         message << "Connection: " << "keep-alive" << std::endl;
+        logger.log( "Unexisting path: " + path.native() );
         return message;
     }
 
