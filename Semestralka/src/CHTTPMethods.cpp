@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <ostream>
 #include <fstream>
@@ -44,10 +45,14 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
         return message;
     }
 
-    if( path.extension() == ".jpeg" || path.extension() == ".png" ){
+    std::string extension( path.extension() );
+    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower );
+    if( extension == ".jpg" )
+        extension = ".jpeg";
+    if( extension == ".jpeg" || extension == ".png" ){
         message << "HTTP/1.1 " << 200 << " OK" << std::endl;
         message << "Connection: " << "keep-alive" << std::endl;
-        message << "Content-Type: image/" << path.extension().native().substr(1) << "; charset=UTF-8" << std::endl;
+        message << "Content-Type: image/" << extension.substr(1) << "; charset=UTF-8" << std::endl;
         std::ifstream ifs(path);
         std::string content( (std::istreambuf_iterator<char>(ifs) ),
                              (std::istreambuf_iterator<char>()    ) );
@@ -58,11 +63,11 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
         return message;
     }
 
-    if( path.extension() == ".html" || path.extension() == ".txt" ){
+    if( extension == ".html" || extension == ".txt" ){
         message << "HTTP/1.1 " << 200 << " OK" << std::endl;
         message << "Connection: " << "keep-alive" << std::endl;
-        if( path.extension() == ".html" )
-            message << "Content-Type: text/" << path.extension().native().substr(1) << "; charset=UTF-8" << std::endl;
+        if( extension == ".html" )
+            message << "Content-Type: text/" << extension.substr(1) << "; charset=UTF-8" << std::endl;
         else
             message << "Content-Type: text/plain; charset=UTF-8" << std::endl;
         std::ifstream ifs(path);
