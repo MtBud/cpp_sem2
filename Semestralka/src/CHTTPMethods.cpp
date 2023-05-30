@@ -14,14 +14,11 @@
 
 std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& localPath, std::stringstream& message ){
     CConfig conf;
-    CLogger logger;
     for( auto& i : conf.data["restricted"]){
         if( localPath.native().find(i) == 0){
             // check if correct password has been provided
             if( headers["Authorization"] != std::string("Basic ").append(conf.data["authentication"]["password"]) ){
-                message << "HTTP/1.1 " << 401 << " Unauthorized" << "\r\n";
-                message << "Content-Length: " << 0 << "\r\n";
-                message << "Connection: " << "keep-alive" << "\r\n";
+                badRequest( "401 Unauthorized", message);
                 return message;
             }
         }
@@ -33,25 +30,21 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
 
     // 404 path doesn't exist
     if( ! std::filesystem::exists(path) ){
-        message << "HTTP/1.1 " << 404 << " Not Found" << "\r\n";
-        message << "Connection: " << "keep-alive" << "\r\n";
-        message << "Content-Length: " << 0 << "\r\n";
-        logger.log( "Unexisting path: " + path.native() );
+        badRequest( "404 Not Found", message );
+        CLogger::log( "Unexisting path: " + path.native() );
         return message;
     }
 
+    // write 200 OK at the beginning and choose which content type header to use
+    std::string content;
+    message << "HTTP/1.1 " << 200 << " OK" << "\r\n";
+    message << "Connection: " << "keep-alive" << "\r\n";
+
     if( std::filesystem::is_directory(path) ){
-        message << "HTTP/1.1 " << 200 << " OK" << "\r\n";
-        message << "Connection: " << "keep-alive" << "\r\n";
         message << "Content-Type: text/plain; charset=UTF-8" << "\r\n";
         std::stringstream tmp;
         CContent::list( "", path, tmp );
-        size_t length = tmp.str().length();
-        message << "Content-Length: " << length << "\r\n";
-        message << "\r\n";
-
-        message << tmp.str();
-        return message;
+        content = tmp.str();
     }
 
     std::string extension( path.extension() );
@@ -59,39 +52,33 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
     if( extension == ".jpg" )
         extension = ".jpeg";
     if( extension == ".jpeg" || extension == ".png" ){
-        message << "HTTP/1.1 " << 200 << " OK" << "\r\n";
-        message << "Connection: " << "keep-alive" << "\r\n";
-        message << "Content-Type: image/" << extension.substr(1) << "; charset=UTF-8" << "\r\n";
+        message << "Content-Type: image/" << extension.substr(1) << "\r\n";
         std::ifstream ifs(path);
-        std::string content( (std::istreambuf_iterator<char>(ifs) ),
-                             (std::istreambuf_iterator<char>()    ) );
-        message << "Content-Length: " << content.length() << "\r\n";
-        message << "\r\n";
-
-        message << content;
-        return message;
+        content = std::string( (std::istreambuf_iterator<char>(ifs) ),
+                               (std::istreambuf_iterator<char>() ) );
     }
 
     if( extension == ".html" || extension == ".txt" ){
-        message << "HTTP/1.1 " << 200 << " OK" << "\r\n";
-        message << "Connection: " << "keep-alive" << "\r\n";
         if( extension == ".html" )
             message << "Content-Type: text/" << extension.substr(1) << "; charset=UTF-8" << "\r\n";
         else
             message << "Content-Type: text/plain; charset=UTF-8" << "\r\n";
         std::ifstream ifs(path);
-        std::string content( (std::istreambuf_iterator<char>(ifs) ),
-                             (std::istreambuf_iterator<char>()    ) );
-        message << "Content-Length: " << content.length() << "\r\n";
-        message << "\r\n";
-
-        message << content;
-        return message;
+        content = std::string( (std::istreambuf_iterator<char>(ifs) ),
+                               (std::istreambuf_iterator<char>() ) );
     }
 
-    message << "HTTP/1.1 " << 415 << " Unsupported Media Type" << "\r\n";
-    message << "Connection: " << "keep-alive" << "\r\n";
-    message << "Content-Length: " << 0 << "\r\n";
+    // if none of the options were executed, flush the message stream and reply with error instead
+    if( content.empty() ){
+        message.str("");
+        badRequest( "415 Unsupported Media Type", message);
+    }
+    else{
+        message << "Content-Length: " << content.length() << "\r\n";
+        message << "\r\n";
+        message << content;
+    }
+
     return message;
 }
 
@@ -105,12 +92,10 @@ void CHTTPMethods::authenticate(){
 }
 
 
-void CHTTPMethods::badRequest( int cliSocket ){
-    std::stringstream message;
-    message << "HTTP/1.1 " << 400 << " Bad Request" << "\r\n";
+std::stringstream& CHTTPMethods::badRequest( const std::string& response, std::stringstream& message ){
+    message << "HTTP/1.1 " << response << "\r\n";
     message << "Content-Length: " << 0 << "\r\n";
     message << "Connection: " << "keep-alive" << "\r\n";
     message << "\r\n";
-    size_t length = message.str().length();
-    send( cliSocket, message.str().c_str(), length, 0);
-};
+    return message;
+}

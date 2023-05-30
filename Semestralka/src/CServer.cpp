@@ -84,6 +84,7 @@ void CServer::serve( int srvrSocket ){
         // recieve data from connection
         char buffer[BUFFER_SIZE];
         while(true){
+            std::stringstream message;
             unsigned int bytesRead = recv(cliSocket, buffer, BUFFER_SIZE - 1, 0);
             if( bytesRead == 0){
                 logger.log("Connection ended abruptly");
@@ -93,7 +94,7 @@ void CServer::serve( int srvrSocket ){
             std::cout << buffer << std::endl;
             std::string bytes = buffer;
             if( bytes.find_last_of("\r\n\r\n") == std::string::npos ){
-                CHTTPMethods::badRequest( cliSocket );
+                reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));
                 continue;
             }
             bytes = bytes.substr( 0, bytes.size() - 4);
@@ -105,7 +106,7 @@ void CServer::serve( int srvrSocket ){
                 std::vector< std::string > header;
                 header = parse(request[i], ": ");
                 if( header.size() == 1){
-                    CHTTPMethods::badRequest( cliSocket );
+                    reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));
                     continue;
                 }
                 headers.insert(std::pair(header[0], header[1] ) );
@@ -115,7 +116,6 @@ void CServer::serve( int srvrSocket ){
             if( CServer::requestSyntax( requestLine, headers, methods, cliSocket ) )
                 continue;
 
-            std::stringstream message;
             methods[requestLine[0]]->incoming( headers, requestLine[1], message );
             size_t length = message.str().length();
             send( cliSocket, message.str().c_str(), length, 0);
@@ -146,7 +146,6 @@ void CServer::console(){
 
         utils[parsed[0]]->launch(parsed, std::cout);
 
-
     }
 }
 
@@ -162,23 +161,29 @@ bool CServer::requestSyntax( const std::vector< std::string >& requestLine,
                              const std::map< std::string, std::string >& headers,
                              const std::map< std::string, CHTTPMethods* >& methods,
                              int cliSocket ){
+    std::stringstream message;
     if( requestLine.size() != 3){
-        CHTTPMethods::badRequest( cliSocket );
+        reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));
         std::cout << "Request line has a wrong number of parameters" << std::endl;
         return true;
     }
 
     if( methods.find(requestLine[0]) == methods.end()){
-        CHTTPMethods::badRequest( cliSocket );
+        reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));
         std::cout << "Bad or unsupported method" << std::endl;
         return true;
     }
 
     if( std::set< std::string > {"HTTP/1.0", "HTTP/2", "HTTP/3", "HTTP/1.1"}.count( requestLine[2] ) == 0 ){
-        CHTTPMethods::badRequest( cliSocket );
+        reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));
         std::cout << "Unrecognized HTTP version" << std::endl;
         return true;
     }
 
     return false;
+}
+
+void CServer::reply( int cliSocket, std::stringstream& message ){
+    size_t length = message.str().length();
+    send( cliSocket, message.str().c_str(), length, 0);
 }

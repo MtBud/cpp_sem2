@@ -19,6 +19,7 @@ public:
                                const std::map< std::string, CHTTPMethods* >& methods,
                                int cliSocket);
 
+    static void reply( int cliSocket, std::stringstream& message );
 
 private:
     static std::vector<std::string> parse( std::string data, const std::string& delimiter );

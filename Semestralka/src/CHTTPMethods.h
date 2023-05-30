@@ -6,7 +6,7 @@
 class CHTTPMethods{
 public:
     virtual std::stringstream& incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& path, std::stringstream& message ) = 0;
-    static void badRequest( int cliSocket );
+    static std::stringstream& badRequest( const std::string& response, std::stringstream& message );
 private:
     void authenticate();
 };
