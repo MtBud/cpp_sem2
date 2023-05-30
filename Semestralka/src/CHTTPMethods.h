@@ -21,13 +21,3 @@ public:
     std::stringstream& incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& path, std::stringstream& message ) override;
 };
 
-class CPut : public CHTTPMethods{
-public:
-    std::stringstream& incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& path, std::stringstream& message ) override;
-};
-
-class CDelete : public CHTTPMethods{
-public:
-    std::stringstream& incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& path, std::stringstream& message ) override;
-};
-

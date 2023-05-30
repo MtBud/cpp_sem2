@@ -99,13 +99,6 @@ std::stringstream& CPost::incoming( std::map< std::string, std::string >& header
     return message;
 }
 
-std::stringstream& CPut::incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& path, std::stringstream& message ){
-    return message;
-}
-
-std::stringstream& CDelete::incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& path, std::stringstream& message ){
-    return message;
-}
 
 void CHTTPMethods::authenticate(){
 

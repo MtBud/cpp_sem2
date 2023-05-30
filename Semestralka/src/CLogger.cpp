@@ -1,15 +1,19 @@
 #include <string>
 #include <iostream>
+#include <fstream>
 #include "CLogger.h"
+#include "CConfig.h"
 
 void CLogger::log ( const std::string& message){
-    std::cout << message << std::endl;
+    CConfig conf;
+    if( conf.data["log"]["console"][0] )
+        std::cout << message << std::endl;
+
+    if( conf.data["log"]["file"][0] ){
+        std::ofstream ofs( std::string( conf.data["root"] ) + "/log/main.log"  );
+        ofs << message << std::endl;
+        ofs.close();
+    }
 }
 
-/*
-void CLogger::database ( const std::string& message );
-
-void CLogger::file ( const std::string& message );
-
-void CLogger::terminal ( const std::string& message );
-*/
+// maybe add a database later

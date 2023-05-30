@@ -10,7 +10,7 @@ main.o: src/main.cpp src/CServer.h
 CServer.o: src/CServer.cpp src/CServer.h src/CLogger.h src/CConfig.h src/CUtils.h src/CHTTPMethods.h
 	g++ -Wall -pedantic -c src/CServer.cpp -o CServer.o
 
-CLogger.o: src/CLogger.h src/CLogger.cpp
+CLogger.o: src/CLogger.h src/CLogger.cpp src/CConfig.h
 	g++ -Wall -pedantic -c src/CLogger.cpp -o CLogger.o
 
 CConfig.o: src/CConfig.cpp src/CConfig.h libs/json.hpp
