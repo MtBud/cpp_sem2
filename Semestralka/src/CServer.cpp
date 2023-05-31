@@ -100,6 +100,11 @@ void CServer::serve( int srvrSocket ){
 
 
             size_t requestEnd = bytes.find("\r\n\r\n");
+            if( requestEnd == std::string::npos ){
+                reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));
+                std::cout << "No header field terminator" << std::endl;
+                continue;
+            }
             std::string requestBody = bytes.substr(0, requestEnd);
             std::string dataBody;
             if( requestEnd + 4 < bytes.size())
