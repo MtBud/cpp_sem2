@@ -17,8 +17,8 @@
 
   "log": {
     "console": [true, true],
-    "file": [null, true],
-    "database": [null, true]
+    "file": [false, true],
+    "database": [false, true]
   },
 
   "scripts": {

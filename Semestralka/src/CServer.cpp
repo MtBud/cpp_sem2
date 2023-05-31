@@ -13,13 +13,12 @@
 #include "CLogger.h"
 #include "CUtils.h"
 
-#define BUFFER_SIZE 10240
+#define BUFFER_SIZE 8196
 
 
 
 int CServer::start(){
     CConfig conf;
-    CLogger logger;
 
     // make a socket
     int srvrSocket = socket(AF_INET, SOCK_STREAM,0);
@@ -43,12 +42,13 @@ int CServer::start(){
         throw std::runtime_error("Cannot initiate listening");
     }
 
-    logger.log("Server initialized");
+    CLogger::log("Server initialized");
     return srvrSocket;
 }
 
 std::vector<std::string> CServer::parse( std::string data, const std::string& delimiter ){
     std::vector<std::string> parsed;
+    size_t delimSize = delimiter.size();
     while(true){
         size_t pos = data.find(delimiter);
         if(pos == std::string::npos){
@@ -57,20 +57,18 @@ std::vector<std::string> CServer::parse( std::string data, const std::string& de
             break;
         }
         parsed.push_back(data.substr(0,pos));
-        data.erase(0,pos + 1);
+        data.erase(0,pos + delimSize);
     }
 
     return parsed;
 }
 
 void CServer::serve( int srvrSocket ){
-    CLogger logger;
     struct sockaddr_in remote_address;
     socklen_t socklen;
     std::map <std::string, CHTTPMethods* > methods;
     methods = {{"GET", new(CGet)},
                {"POST", new(CPost)}};
-
 
     while(true){
         // accept a connection
@@ -85,20 +83,29 @@ void CServer::serve( int srvrSocket ){
         char buffer[BUFFER_SIZE];
         while(true){
             std::stringstream message;
-            unsigned int bytesRead = recv(cliSocket, buffer, BUFFER_SIZE - 1, 0);
+            std::string bytes;
+            ssize_t bytesRead;
+            while((bytesRead = recv(cliSocket, buffer, BUFFER_SIZE, 0)) > 0){
+                bytes += std::string(buffer, bytesRead);
+                if(bytesRead != BUFFER_SIZE)
+                    break;
+            }
             if( bytesRead == 0){
                 CLogger::log("Connection ended abruptly");
                 break;
             }
-            buffer[bytesRead] = '\0';
-            std::cout << buffer << std::endl;
-            std::string bytes = buffer;
-            if( bytes.find_last_of("\r\n\r\n") == std::string::npos ){
-                reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));
-                continue;
-            }
-            bytes = bytes.substr( 0, bytes.size() - 4);
-            std::vector< std::string > request = parse( bytes, "\r\n" );
+
+            CLogger::log("RECIEVED");
+            CLogger::log(bytes);
+
+
+            size_t requestEnd = bytes.find("\r\n\r\n");
+            std::string requestBody = bytes.substr(0, requestEnd);
+            std::string dataBody;
+            if( requestEnd + 4 < bytes.size())
+                dataBody = bytes.substr(requestEnd + 4);
+
+            std::vector< std::string > request = parse( requestBody, "\r\n" );
             std::vector< std::string > requestLine = parse( request[0], " ");
             std::map< std::string, std::string > headers;
             // make map of headers
@@ -116,39 +123,19 @@ void CServer::serve( int srvrSocket ){
             if( CServer::requestSyntax( requestLine, headers, methods, cliSocket ) )
                 continue;
 
-            methods[requestLine[0]]->incoming( headers, requestLine[1], message, request[request.size()-1]);
+            methods[requestLine[0]]->incoming( headers, requestLine[1], message, dataBody);
             size_t length = message.str().length();
+            CLogger::log("SENDING");
+            CLogger::log(message.str());
             send( cliSocket, message.str().c_str(), length, 0);
-
+            if( headers["Connection"] == "close" ){
+                CLogger::log("Connection closed by client");
+                break;
+            }
         }
 
     }
 }
-
-void CServer::console(){
-    std::map <std::string, CUtils* > utils;
-    std::vector<std::string> parsed;
-
-    utils = {{"display", new(CDisplay)},
-             {"content", new(CContent)},
-             {"execute", new(CExecute)},
-             {"config", new(CChangeConfig)}};
-    while(true){
-        std::cout << "Cherokee: ";
-        std::string input;
-        getline(std::cin, input, '\n');
-        parsed = CServer::parse( input, " ");
-
-        if( utils.find(parsed[0]) == utils.end()){
-            std::cout << "Unknown command" << std::endl << std::endl;
-            continue;
-        }
-
-        utils[parsed[0]]->launch(parsed, std::cout);
-
-    }
-}
-
 
 void CServer::shutdown( int srvrSocket, int cliSocket = 0 ){
     close(srvrSocket);

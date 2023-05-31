@@ -12,7 +12,7 @@
 #include "CUtils.h"
 #include "CLogger.h"
 
-#define BUFFER_SIZE 10240
+#define BUFFER_SIZE 8196
 
 
 std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& localPath, std::stringstream& message, const std::string& data ){
@@ -42,7 +42,10 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
     // write 200 OK at the beginning and choose which content type header to use
     std::string content;
     message << "HTTP/1.1 " << 200 << " OK" << "\r\n";
-    message << "Connection: " << "keep-alive" << "\r\n";
+    if(headers["Connection"] == "close")
+        message << "Connection: " << "close" << "\r\n";
+    else
+        message << "Connection: " << "keep-alive" << "\r\n";
 
     if( std::filesystem::is_directory(path) ){
         message << "Content-Type: text/plain; charset=UTF-8" << "\r\n";
