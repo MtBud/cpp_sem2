@@ -30,7 +30,6 @@ for file in os.listdir(directory):
         print("content:")
         print(content.decode())
 
-
     # extension = file[file.rfind("_")+1:file.find(".")]
     # file1 = open(os.path.join(filesDirectory, "recieved." + extension), "wb")
     # file1.write(content)

@@ -19,12 +19,16 @@ filesDirectory = "../post_files"
 for file in os.listdir(directory):
     requestFile = open(os.path.join(directory, file), "rb")
     requestFileContent = requestFile.read().decode()
-    fileName = requestFileContent[requestFileContent.find("\r\n\r\n")+4:]
+    filePath = requestFileContent[requestFileContent.find("\r\n\r\n")+4:]
+    fileName, extension = os.path.splitext(filePath)
+    extension = extension[1:]
 
-    bodyFile = open(os.path.join(filesDirectory, fileName), "rb")
+    bodyFile = open(os.path.join(filesDirectory, filePath), "rb")
     body = bodyFile.read()
     length = len(body)
-    requestFileContent = requestFileContent[:requestFileContent.find("\r\n\r\n")] + "Content-length: " + str(length) + "\r\n"
+    requestFileContent = requestFileContent[:requestFileContent.find("\r\n\r\n")]
+    requestFileContent += ("\r\n" + "Content-Length: " + str(length) + "\r\n")
+    requestFileContent += ("Content-Type: text/" + extension + "\r\n\r\n")
     message = bytes(requestFileContent, "utf-8") + body
     s.sendall(message)
 

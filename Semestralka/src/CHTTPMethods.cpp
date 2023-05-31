@@ -117,20 +117,31 @@ std::stringstream& CPost::incoming( std::map< std::string, std::string >& header
         }
     }
 
-    if( headers.find("Content-length") == headers.end() ){
+    if( headers.find("Content-Length") == headers.end() ){
+        CLogger::log("Missing content length");
         return badRequest("411 Length Required", message);
+    }
+    if( headers.find("Content-Type") == headers.end() ){
+        CLogger::log("Missing content type");
+        return badRequest("400 Bad Request", message);
     }
 
     std::string fileExt = headers["Content-Type"];
-    fileExt = fileExt.substr(fileExt.find('/'));
+    if( fileExt.find('/') == std::string::npos ){
+        CLogger::log("Bad content type format");
+        return badRequest("400 Bad Request", message);
+    }
+    fileExt = fileExt.substr(fileExt.find('/') + 1);
     std::stringstream newName;
-    newName << std::time_t();
+    newName << std::time(nullptr);
+    std::cout << "filename: " << localPath.native() + '/' + newName.str() + '.' + fileExt << std::endl;
     std::ofstream outFile(localPath.native() + newName.str() + '.' + fileExt, std::ios::binary);
     if( ! outFile ){
         CLogger::log( "File couldn't be created" );
         return badRequest( "500 Internal Server Error", message);
     }
 
+    std::cout << "length: " << headers["Content-Length"] << std::endl;
     outFile.write(content.c_str(), stoi(headers["Content-Length"]) );
     outFile.close();
 
