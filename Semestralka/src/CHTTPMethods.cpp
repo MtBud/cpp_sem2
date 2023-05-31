@@ -2,6 +2,9 @@
 #include <iostream>
 #include <ostream>
 #include <fstream>
+#include <set>
+#include <ctime>
+#include <string>
 #include <sys/socket.h>
 #include <filesystem>
 #include "CConfig.h"
@@ -12,7 +15,7 @@
 #define BUFFER_SIZE 10240
 
 
-std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& localPath, std::stringstream& message ){
+std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& localPath, std::stringstream& message, const std::string& data ){
     CConfig conf;
     for( auto& i : conf.data["restricted"]){
         if( localPath.native().find(i) == 0){
@@ -35,6 +38,7 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
         return message;
     }
 
+
     // write 200 OK at the beginning and choose which content type header to use
     std::string content;
     message << "HTTP/1.1 " << 200 << " OK" << "\r\n";
@@ -53,7 +57,7 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
         extension = ".jpeg";
     if( extension == ".jpeg" || extension == ".png" ){
         message << "Content-Type: image/" << extension.substr(1) << "\r\n";
-        std::ifstream ifs(path);
+        std::ifstream ifs(path, std::ios::binary );
         content = std::string( (std::istreambuf_iterator<char>(ifs) ),
                                (std::istreambuf_iterator<char>() ) );
     }
@@ -67,6 +71,7 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
         content = std::string( (std::istreambuf_iterator<char>(ifs) ),
                                (std::istreambuf_iterator<char>() ) );
     }
+
 
     // if none of the options were executed, flush the message stream and reply with error instead
     if( content.empty() ){
@@ -82,13 +87,48 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
     return message;
 }
 
-std::stringstream& CPost::incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& path, std::stringstream& message ){
+//-------------------------------------------------------------------------------------------------------------------
+
+std::stringstream& CPost::incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& localPath, std::stringstream& message, const std::string& content ){
+    CConfig conf;
+    std::set< std::string > allowedDirs;
+    if( ! is_directory(localPath) ){
+        badRequest( "404 Not Found", message );
+        CLogger::log( "Unexisting path: " + localPath.native() );
+        return message;
+    }
+
+    for( auto& i : conf.data["post"])
+        allowedDirs.insert(i);
+
+    // check if the path is allowed to be posted to
+    if( allowedDirs.find(localPath.native().substr( localPath.native().find_first_of('/') )) == allowedDirs.end() ){
+        // check if correct password has been provided
+        if( headers["Authorization"] != std::string("Basic ").append(conf.data["authentication"]["password"]) ){
+            badRequest( "401 Unauthorized", message);
+            return message;
+        }
+    }
+
+    std::string fileExt = headers["Content-Type"];
+    fileExt = fileExt.substr(fileExt.find('/'));
+    std::stringstream newName;
+    newName << std::time_t();
+    std::ofstream outFile(localPath.native() + newName.str() + '.' + fileExt, std::ios::binary);
+    if( ! outFile ){
+        CLogger::log( "File couldn't be created" );
+        return badRequest( "500 Internal Server Error", message);
+    }
+
+    outFile.write(content.c_str(), stoi(headers["Content-Length"]) );
+    outFile.close();
+
+    message << "HTTP/1.1 " << "200 OK" << "\r\n";
+    message << "Content-Length: " << 0 << "\r\n";
+    message << "Connection: " << "keep-alive" << "\r\n";
+    message << "\r\n";
+
     return message;
-}
-
-
-void CHTTPMethods::authenticate(){
-
 }
 
 

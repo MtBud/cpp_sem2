@@ -11,6 +11,10 @@
       "/dev/"
   ],
 
+  "post": [
+    "/uploads/"
+  ],
+
   "log": {
     "console": [true, true],
     "file": [null, true],
