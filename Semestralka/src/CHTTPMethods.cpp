@@ -94,23 +94,31 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
 
 std::stringstream& CPost::incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& localPath, std::stringstream& message, const std::string& content ){
     CConfig conf;
-    std::set< std::string > allowedDirs;
-    if( ! is_directory(localPath) ){
+    if( ! is_directory( std::filesystem::path(conf.data["root"]) += localPath ) ){
         badRequest( "404 Not Found", message );
         CLogger::log( "Unexisting path: " + localPath.native() );
         return message;
     }
 
-    for( auto& i : conf.data["post"])
-        allowedDirs.insert(i);
-
-    // check if the path is allowed to be posted to
-    if( allowedDirs.find(localPath.native().substr( localPath.native().find_first_of('/') )) == allowedDirs.end() ){
-        // check if correct password has been provided
+    // check if the path is available to normal users
+    unsigned int i;
+    for( i = 0; i < conf.data["post"].size(); i++){
+        std::filesystem::path basePath = conf.data["post"][i];
+        if(basePath == localPath)
+            break;
+        auto rel = std::filesystem::relative(localPath, basePath);
+        if( rel.native()[0] == '.' )
+            break;
+    }
+    // if not, check for authorization
+    if( i == conf.data["post"].size() ){
         if( headers["Authorization"] != std::string("Basic ").append(conf.data["authentication"]["password"]) ){
-            badRequest( "401 Unauthorized", message);
-            return message;
+            return badRequest( "401 Unauthorized", message);
         }
+    }
+
+    if( headers.find("Content-length") == headers.end() ){
+        return badRequest("411 Length Required", message);
     }
 
     std::string fileExt = headers["Content-Type"];
