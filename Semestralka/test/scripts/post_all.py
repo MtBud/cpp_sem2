@@ -17,6 +17,8 @@ print("successful connection")
 directory = "../post_requests"
 filesDirectory = "../post_files"
 for file in os.listdir(directory):
+    if file != "post_png.txt":
+        continue
     requestFile = open(os.path.join(directory, file), "rb")
     requestFileContent = requestFile.read().decode()
     filePath = requestFileContent[requestFileContent.find("\r\n\r\n")+4:]

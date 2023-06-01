@@ -96,7 +96,7 @@ void CServer::serve( int srvrSocket ){
             }
 
             CLogger::log("RECIEVED");
-            CLogger::log(bytes);
+            CLogger::log(std::string( bytes ).substr(0, 1024));
 
 
             size_t requestEnd = bytes.find("\r\n\r\n");
@@ -128,7 +128,7 @@ void CServer::serve( int srvrSocket ){
             if( CServer::requestSyntax( requestLine, headers, methods, cliSocket ) )
                 continue;
 
-            methods[requestLine[0]]->incoming( headers, requestLine[1], message, dataBody);
+            methods[requestLine[0]]->incoming( headers, requestLine[1], message, dataBody, cliSocket );
             size_t length = message.str().length();
             CLogger::log("SENDING");
             CLogger::log(message.str());

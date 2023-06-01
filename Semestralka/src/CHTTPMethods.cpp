@@ -4,7 +4,11 @@
 #include <fstream>
 #include <set>
 #include <ctime>
+#include <chrono>
+#include <future>
 #include <string>
+#include <exception>
+#include <thread>
 #include <sys/socket.h>
 #include <filesystem>
 #include "CConfig.h"
@@ -14,8 +18,8 @@
 
 #define BUFFER_SIZE 8196
 
-
-std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& localPath, std::stringstream& message, const std::string& data ){
+std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers, std::filesystem::path localPath,
+                                   std::stringstream& message, std::string& data, int cliSocket ){
     CConfig conf;
     for( auto& i : conf.data["restricted"]){
         if( localPath.native().find(i) == 0){
@@ -92,8 +96,13 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
 
 //-------------------------------------------------------------------------------------------------------------------
 
-std::stringstream& CPost::incoming( std::map< std::string, std::string >& headers, const std::filesystem::path& localPath, std::stringstream& message, const std::string& content ){
+std::stringstream& CPost::incoming( std::map< std::string, std::string >& headers, std::filesystem::path localPath,
+                                    std::stringstream& message, std::string& content, int cliSocket ){
     CConfig conf;
+    if( localPath == "/" ){
+        localPath = "/uploads";
+    }
+
     if( ! is_directory( std::filesystem::path(conf.data["root"]) += localPath ) ){
         badRequest( "404 Not Found", message );
         CLogger::log( "Unexisting path: " + localPath.native() );
@@ -121,10 +130,26 @@ std::stringstream& CPost::incoming( std::map< std::string, std::string >& header
         CLogger::log("Missing content length");
         return badRequest("411 Length Required", message);
     }
+    if( stoi( headers[ "Content-Length" ] ) < 0 ){
+        CLogger::log("Missing content length");
+        return badRequest("411 Length Required", message);
+    }
+    unsigned int contentLength = (unsigned int) stoi( headers[ "Content-Length" ]);
     if( headers.find("Content-Type") == headers.end() ){
         CLogger::log("Missing content type");
         return badRequest("400 Bad Request", message);
     }
+
+    if( contentLength != content.size() ){
+        std::future< bool > f1 = std::async( std::launch::async, []( size_t contentLength, int cliSocket, std::string& content) {
+            return assemblePackets( contentLength, cliSocket, content );
+        }, contentLength, cliSocket, std::ref(content));
+        if( f1.wait_for(std::chrono::seconds(1)) == std::future_status::timeout ){
+            CLogger::log("Connection timed out");
+            return badRequest("408 Request Timeout", message);
+        }
+    }
+
 
     std::string fileExt = headers["Content-Type"];
     if( fileExt.find('/') == std::string::npos ){
@@ -132,17 +157,20 @@ std::stringstream& CPost::incoming( std::map< std::string, std::string >& header
         return badRequest("400 Bad Request", message);
     }
     fileExt = fileExt.substr(fileExt.find('/') + 1);
-    std::stringstream newName;
-    newName << std::time(nullptr);
-    std::cout << "filename: " << localPath.native() + '/' + newName.str() + '.' + fileExt << std::endl;
-    std::ofstream outFile(localPath.native() + newName.str() + '.' + fileExt, std::ios::binary);
+    std::filesystem::path newName;
+    do{
+        std::stringstream currTime;
+        currTime << std::time( nullptr );
+        newName = ( std::string( conf.data["root"] ) + localPath.native() + '/' + currTime.str() + '.' + fileExt );
+    }while( std::filesystem::exists(newName) );
+
+    std::ofstream outFile( newName, std::ios::binary );
     if( ! outFile ){
         CLogger::log( "File couldn't be created" );
         return badRequest( "500 Internal Server Error", message);
     }
 
-    std::cout << "length: " << headers["Content-Length"] << std::endl;
-    outFile.write(content.c_str(), stoi(headers["Content-Length"]) );
+    outFile << content;
     outFile.close();
 
     message << "HTTP/1.1 " << "200 OK" << "\r\n";
@@ -160,4 +188,14 @@ std::stringstream& CHTTPMethods::badRequest( const std::string& response, std::s
     message << "Connection: " << "keep-alive" << "\r\n";
     message << "\r\n";
     return message;
+}
+
+bool CHTTPMethods::assemblePackets( size_t givenSize, int cliSocket, std::string& content ){
+    char buffer[BUFFER_SIZE];
+    ssize_t bytesRead;
+    while( content.size() < givenSize ){
+        bytesRead = recv(cliSocket, buffer, BUFFER_SIZE, 0);
+        content += std::string(buffer, bytesRead);
+    }
+    return true;
 }
