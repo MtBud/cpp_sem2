@@ -1,8 +1,7 @@
 POST
--- fix file creation
 script execution
+remote shutdown
 propper configuration integration
-write testing environment
 
 Bonus:
 - add logging to database

@@ -16,9 +16,9 @@
   ],
 
   "log": {
-    "console": [true, true],
-    "file": [false, true],
-    "database": [false, true]
+    "console": true,
+    "file": false,
+    "database": false
   },
 
   "scripts": {
@@ -34,6 +34,5 @@
     "address": "127.0.0.25"
   },
 
-  "editor": null,
   "root": "./assets/"
 }

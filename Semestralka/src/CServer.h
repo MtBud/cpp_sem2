@@ -12,7 +12,7 @@ public:
 
     static void console();
 
-    static void shutdown( int srvrSocket, int cliSocket );
+    static void shutdown( int srvrSocket, int cliSocket = 0 );
 
     static bool requestSyntax( const std::vector< std::string >& requestLine,
                                const std::map< std::string, std::string >& headers,

@@ -6,6 +6,7 @@
 #include <set>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "CHTTPMethods.h"
 #include "CServer.h"
@@ -29,7 +30,12 @@ int CServer::start(){
     struct sockaddr_in sockAddress;
     sockAddress.sin_family = AF_INET;
     sockAddress.sin_port = htons(conf.data["network"]["port"]);
-    sockAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    std::cout << std::string( conf.data["network"]["address"] ).c_str() << std::endl;
+    if( 1 != inet_pton(AF_INET, std::string( conf.data["network"]["address"] ).c_str(), &(sockAddress.sin_addr)) ){
+        close(srvrSocket);
+        throw std::runtime_error("Invalid interface address");
+    }
+    //sockAddress.sin_addr.s_addr
     if( bind(srvrSocket, (struct sockaddr *) &sockAddress, sizeof(sockAddress)) < 0 ){
         close(srvrSocket);
         throw std::runtime_error("Port binding failed");
@@ -142,7 +148,7 @@ void CServer::serve( int srvrSocket ){
     }
 }
 
-void CServer::shutdown( int srvrSocket, int cliSocket = 0 ){
+void CServer::shutdown( int srvrSocket, int cliSocket ){
     close(srvrSocket);
     if(cliSocket > 0)
         close(cliSocket);

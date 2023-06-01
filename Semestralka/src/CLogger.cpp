@@ -6,11 +6,11 @@
 
 void CLogger::log ( const std::string& message){
     CConfig conf;
-    if( conf.data["log"]["console"][0] )
+    if( conf.data["log"]["console"] )
         std::cout << message << std::endl;
 
-    if( conf.data["log"]["file"][0] ){
-        std::ofstream ofs( std::string( conf.data["root"] ) + "/log/main.log"  );
+    if( conf.data["log"]["file"] ){
+        std::ofstream ofs( std::string( conf.data["root"] ) + "/log/main.log" , std::ios::app);
         ofs << message << std::endl;
         ofs.close();
     }
