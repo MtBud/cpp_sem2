@@ -1,18 +1,28 @@
 {
   "network": {
     "port": 8080,
-    "address": "127.0.0.1",
-    "domain": null
+    "address": "127.0.0.1"
+  },
+
+  "root": "./assets",
+  "shutdown": "/admin/shutdown",
+  "password": "admin-passwd",
+
+  "address-mapping": {
+    "/admin": "/admin",
+    "/log": "/log",
+    "/scripts": "/scripts",
+    "/": "/client"
   },
 
   "restricted": [
-      "/scripts/",
-      "/admin/",
-      "/dev/"
+    "/scripts",
+    "/admin",
+    "/log"
   ],
 
   "post": [
-    "/uploads/"
+    "/client/uploads/"
   ],
 
   "log": {
@@ -26,13 +36,6 @@
     ".cpp": "g++ path; path/a.out",
     ".sh": "./path",
     ".py": "python3 path"
-  },
+  }
 
-  "authentication": {
-    "password": "admin-passwd",
-    "method": "PUT",
-    "address": "127.0.0.25"
-  },
-
-  "root": "./assets/"
 }

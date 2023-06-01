@@ -1,6 +1,6 @@
 import os
 import shutil
-folder = '../../assets/uploads'
+folder = '../../assets/client/uploads'
 for filename in os.listdir(folder):
     file_path = os.path.join(folder, filename)
     try:

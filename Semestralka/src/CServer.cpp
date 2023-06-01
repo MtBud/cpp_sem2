@@ -17,12 +17,13 @@
 #define BUFFER_SIZE 8196
 
 
+CServer::CServer():cliSocket(0), srvrSocket(0){}
 
 int CServer::start(){
     CConfig conf;
 
     // make a socket
-    int srvrSocket = socket(AF_INET, SOCK_STREAM,0);
+    srvrSocket = socket(AF_INET, SOCK_STREAM,0);
     if( srvrSocket < 0 )
         throw std::runtime_error("Socket initialization failed");
 
@@ -30,7 +31,6 @@ int CServer::start(){
     struct sockaddr_in sockAddress;
     sockAddress.sin_family = AF_INET;
     sockAddress.sin_port = htons(conf.data["network"]["port"]);
-    std::cout << std::string( conf.data["network"]["address"] ).c_str() << std::endl;
     if( 1 != inet_pton(AF_INET, std::string( conf.data["network"]["address"] ).c_str(), &(sockAddress.sin_addr)) ){
         close(srvrSocket);
         throw std::runtime_error("Invalid interface address");
@@ -69,7 +69,7 @@ std::vector<std::string> CServer::parse( std::string data, const std::string& de
     return parsed;
 }
 
-void CServer::serve( int srvrSocket ){
+void CServer::serve(){
     struct sockaddr_in remote_address;
     socklen_t socklen;
     std::map <std::string, CHTTPMethods* > methods;
@@ -78,7 +78,7 @@ void CServer::serve( int srvrSocket ){
 
     while(true){
         // accept a connection
-        int cliSocket = accept( srvrSocket, (struct sockaddr *) &remote_address, &socklen);
+        cliSocket = accept( srvrSocket, (struct sockaddr *) &remote_address, &socklen);
         if( cliSocket < 0 ){
             close(srvrSocket);
             throw std::runtime_error("Connection couln't be made");
@@ -131,7 +131,7 @@ void CServer::serve( int srvrSocket ){
             }
 
             // check for bad get_requests
-            if( CServer::requestSyntax( requestLine, headers, methods, cliSocket ) )
+            if( CServer::requestSyntax( requestLine, headers, methods ) )
                 continue;
 
             methods[requestLine[0]]->incoming( headers, requestLine[1], message, dataBody, cliSocket );
@@ -148,17 +148,15 @@ void CServer::serve( int srvrSocket ){
     }
 }
 
-void CServer::shutdown( int srvrSocket, int cliSocket ){
-    close(srvrSocket);
+void CServer::shutdown() const{
     if(cliSocket > 0)
         close(cliSocket);
-    exit(EXIT_SUCCESS);
+    close(srvrSocket);
 }
 
 bool CServer::requestSyntax( const std::vector< std::string >& requestLine,
                              const std::map< std::string, std::string >& headers,
-                             const std::map< std::string, CHTTPMethods* >& methods,
-                             int cliSocket ){
+                             const std::map< std::string, CHTTPMethods* >& methods ) const{
     std::stringstream message;
     if( requestLine.size() != 3){
         reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));

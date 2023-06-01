@@ -24,11 +24,19 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
     for( auto& i : conf.data["restricted"]){
         if( localPath.native().find(i) == 0){
             // check if correct password has been provided
-            if( headers["Authorization"] != std::string("Basic ").append(conf.data["authentication"]["password"]) ){
+            if( headers["Authorization"] != std::string("Basic ").append(conf.data["password"]) ){
                 badRequest( "401 Unauthorized", message);
                 return message;
             }
         }
+    }
+
+    if( localPath == "/admin/shutdown" ){
+        message << "HTTP/1.1 200 OK\r\n";
+        message << "Content-Length: " << 0 << "\r\n";
+        message << "Connection: " << "close" << "\r\n";
+        message << "\r\n";
+        throw std::runtime_error("Server shutdown");
     }
 
     std::string rootDir = conf.data["root"];
@@ -100,13 +108,7 @@ std::stringstream& CPost::incoming( std::map< std::string, std::string >& header
                                     std::stringstream& message, std::string& content, int cliSocket ){
     CConfig conf;
     if( localPath == "/" ){
-        localPath = "/uploads";
-    }
-
-    if( ! is_directory( std::filesystem::path(conf.data["root"]) += localPath ) ){
-        badRequest( "404 Not Found", message );
-        CLogger::log( "Unexisting path: " + localPath.native() );
-        return message;
+        localPath = std::string( conf.data["address-mapping"]["/"] );
     }
 
     // check if the path is available to normal users
@@ -124,6 +126,20 @@ std::stringstream& CPost::incoming( std::map< std::string, std::string >& header
         if( headers["Authorization"] != std::string("Basic ").append(conf.data["authentication"]["password"]) ){
             return badRequest( "401 Unauthorized", message);
         }
+    }
+
+    if( localPath == "/admin/shutdown" ){
+        message << "HTTP/1.1 200 OK\r\n";
+        message << "Content-Length: " << 0 << "\r\n";
+        message << "Connection: " << "close" << "\r\n";
+        message << "\r\n";
+        throw std::runtime_error("Server shutdown");
+    }
+
+    if( ! is_directory( std::filesystem::path(conf.data["root"]) += localPath ) ){
+        badRequest( "404 Not Found", message );
+        CLogger::log( "Unexisting path: " + localPath.native() );
+        return message;
     }
 
     if( headers.find("Content-Length") == headers.end() ){

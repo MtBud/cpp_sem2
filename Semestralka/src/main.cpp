@@ -3,13 +3,14 @@
 #include "CServer.h"
 #include "CLogger.h"
 int main(){
-    int srvrSocket = CServer::start();
+    CServer server;
+    server.start();
     try{
-        CServer::serve(srvrSocket);
+        server.serve();
     }
-    catch( std::string& exception){
+    catch( std::runtime_error& ){
         CLogger::log("Server shutdown");
-        CServer::shutdown( srvrSocket );
+        server.shutdown();
     }
     return 1;
 }

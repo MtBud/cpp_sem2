@@ -6,21 +6,23 @@
 
 class CServer{
 public:
-    static int start();
+    CServer();
 
-    static void serve( int srvrSocket );
+    int start();
 
-    static void console();
+    void serve();
 
-    static void shutdown( int srvrSocket, int cliSocket = 0 );
+    void shutdown() const;
 
-    static bool requestSyntax( const std::vector< std::string >& requestLine,
-                               const std::map< std::string, std::string >& headers,
-                               const std::map< std::string, CHTTPMethods* >& methods,
-                               int cliSocket);
+
 
     static void reply( int cliSocket, std::stringstream& message );
 
 private:
+    int cliSocket;
+    int srvrSocket;
     static std::vector<std::string> parse( std::string data, const std::string& delimiter );
+    [[nodiscard]] bool requestSyntax( const std::vector< std::string >& requestLine,
+                        const std::map< std::string, std::string >& headers,
+                        const std::map< std::string, CHTTPMethods* >& methods) const;
 };
