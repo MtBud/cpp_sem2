@@ -15,6 +15,7 @@
 #include "CHTTPMethods.h"
 #include "CUtils.h"
 #include "CLogger.h"
+#include "CGetFormats.h"
 
 #define BUFFER_SIZE 8196
 
@@ -31,7 +32,7 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
         }
     }
 
-    if( localPath == "/admin/shutdown" ){
+    if( localPath == std::string( conf.data["shutdown"] ) ){
         message << "HTTP/1.1 200 OK\r\n";
         message << "Content-Length: " << 0 << "\r\n";
         message << "Connection: " << "close" << "\r\n";
@@ -108,33 +109,19 @@ std::stringstream& CPost::incoming( std::map< std::string, std::string >& header
                                     std::stringstream& message, std::string& content, int cliSocket ){
     CConfig conf;
     if( localPath == "/" ){
-        localPath = std::string( conf.data["address-mapping"]["/"] );
+        localPath = std::string( conf.data["post"] );
     }
 
     // check if the path is available to normal users
-    unsigned int i;
-    for( i = 0; i < conf.data["post"].size(); i++){
-        std::filesystem::path basePath = conf.data["post"][i];
-        if(basePath == localPath)
-            break;
-        auto rel = std::filesystem::relative(localPath, basePath);
-        if( rel.native()[0] == '.' )
-            break;
-    }
-    // if not, check for authorization
-    if( i == conf.data["post"].size() ){
+    std::filesystem::path basePath = conf.data["post"];
+
+    auto rel = std::filesystem::relative(localPath, basePath);
+    if(basePath != localPath && rel.native()[0] != '.'){
         if( headers["Authorization"] != std::string("Basic ").append(conf.data["authentication"]["password"]) ){
             return badRequest( "401 Unauthorized", message);
         }
     }
 
-    if( localPath == "/admin/shutdown" ){
-        message << "HTTP/1.1 200 OK\r\n";
-        message << "Content-Length: " << 0 << "\r\n";
-        message << "Connection: " << "close" << "\r\n";
-        message << "\r\n";
-        throw std::runtime_error("Server shutdown");
-    }
 
     if( ! is_directory( std::filesystem::path(conf.data["root"]) += localPath ) ){
         badRequest( "404 Not Found", message );

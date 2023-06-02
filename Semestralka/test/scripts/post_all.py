@@ -17,8 +17,6 @@ print("successful connection")
 directory = "../post_requests"
 filesDirectory = "../post_files"
 for file in os.listdir(directory):
-    if file != "post_png.txt":
-        continue
     requestFile = open(os.path.join(directory, file), "rb")
     requestFileContent = requestFile.read().decode()
     filePath = requestFileContent[requestFileContent.find("\r\n\r\n")+4:]
@@ -39,4 +37,4 @@ for file in os.listdir(directory):
     print(reply)
 
 
-# s.sendall(bytes("GET / HTTP/1.1\r\nConnection: close\r\n\r\n", "utf-8"))
+s.sendall(bytes("GET / HTTP/1.1\r\nConnection: close\r\n\r\n", "utf-8"))

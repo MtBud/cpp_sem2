@@ -1,4 +1,4 @@
-POST /admin/shutdown HTTP/1.1
+GET /admin/shutdown HTTP/1.1
 Connection: close
 Authorization: Basic admin-passwd
 

@@ -21,20 +21,17 @@
     "/log"
   ],
 
-  "post": [
-    "/client/uploads/"
-  ],
+  "post": "/client/uploads/",
 
   "log": {
     "console": true,
-    "file": false,
-    "database": false
+    "file": false
   },
 
   "scripts": {
     ".c": "g++ path; path/a.out",
     ".cpp": "g++ path; path/a.out",
-    ".sh": "./path",
+    ".sh": "path",
     ".py": "python3 path"
   }
 
