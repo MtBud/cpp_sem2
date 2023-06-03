@@ -8,7 +8,7 @@ int main(){
     try{
         server.serve();
     }
-    catch( std::runtime_error& ){
+    catch( std::string& ){
         CLogger::log("Server shutdown");
         server.shutdown();
     }

@@ -3,12 +3,14 @@
 #include <ostream>
 #include <fstream>
 #include <set>
+#include <cstdlib>
 #include <ctime>
 #include <chrono>
 #include <future>
 #include <string>
 #include <exception>
 #include <thread>
+#include <climits>
 #include <sys/socket.h>
 #include <filesystem>
 #include "CConfig.h"
@@ -22,17 +24,13 @@
 std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers, std::filesystem::path localPath,
                                    std::stringstream& message, std::string& data, int cliSocket ){
     CConfig conf;
-
-    if( localPath == "/" ){
-        localPath = std::string( conf.data["address-mapping"]["/"] );
-    }
+    localPath = mapAddress( localPath );
 
     for( auto& i : conf.data["restricted"]){
         if( localPath.native().find(i) == 0){
             // check if correct password has been provided
             if( headers["Authorization"] != std::string("Basic ").append(conf.data["password"]) ){
-                badRequest( "401 Unauthorized", message);
-                return message;
+                return badRequest( "401 Unauthorized", message);
             }
         }
     }
@@ -42,7 +40,11 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
         message << "Content-Length: " << 0 << "\r\n";
         message << "Connection: " << "close" << "\r\n";
         message << "\r\n";
-        throw std::runtime_error("Server shutdown");
+        size_t length = message.str().length();
+        CLogger::log("SENDING");
+        CLogger::log(message.str().substr(0, message.str().find("\r\n\r\n") + 4));
+        send( cliSocket, message.str().c_str(), length, 0);
+        throw std::string("shutdwon");
     }
 
     std::string rootDir = conf.data["root"];
@@ -58,7 +60,7 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
 
 
     // write 200 OK and shared headers at the beginning
-    message << "HTTP/1.1 " << 200 << " OK" << "\r\n";
+    message << "HTTP/1.1 200 OK" << "\r\n";
     if(headers["Connection"] == "close")
         message << "Connection: " << "close" << "\r\n";
     else
@@ -70,6 +72,28 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
     }
 
     std::string extension = path.extension();
+    if( localPath.native().find(conf.data["scripts"]) == 0 ){
+        std::filesystem::path startDir = std::filesystem::current_path();
+        std::filesystem::current_path(conf.data["scripts"]);
+        std::string command;
+        try{
+             command = conf.data["script-execution"][extension];
+        }
+        catch( nlohmann::json_abi_v3_11_2::detail::type_error& ){
+            message.str("");
+            return badRequest("415 Unsupported Media Type", message);
+        }
+        if( command.find("filename") == std::string::npos ){
+            message.str("");
+            return badRequest("500 Internal Server Error", message);
+        }
+        command.replace( command.find("filename"), std::string("filename").length(), localPath.filename() );
+        std::system( command.c_str() );
+        message << "Content-Length: " << 0 << "\r\n";
+        message << "\r\n";
+        return message;
+    }
+
     std::string type;
     try{
         type = conf.data["file-extensions"][extension];
@@ -98,13 +122,10 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
 std::stringstream& CPost::incoming( std::map< std::string, std::string >& headers, std::filesystem::path localPath,
                                     std::stringstream& message, std::string& content, int cliSocket ){
     CConfig conf;
-    if( localPath == "/" ){
-        localPath = std::string( conf.data["post"] );
-    }
+    localPath = mapAddress( localPath );
 
     // check if the path is available to normal users
     std::filesystem::path basePath = conf.data["post"];
-
     auto rel = std::filesystem::relative(localPath, basePath);
     if(basePath != localPath && rel.native()[0] != '.'){
         if( headers["Authorization"] != std::string("Basic ").append(conf.data["authentication"]["password"]) ){
@@ -167,7 +188,7 @@ std::stringstream& CPost::incoming( std::map< std::string, std::string >& header
     outFile.close();
 
     message << "HTTP/1.1 " << "200 OK" << "\r\n";
-    message << "Content-Length: " << 0 << "\r\n";
+    message << "Content-Length: 0" << "\r\n";
     message << "Connection: " << "keep-alive" << "\r\n";
     message << "\r\n";
 
@@ -177,11 +198,24 @@ std::stringstream& CPost::incoming( std::map< std::string, std::string >& header
 
 std::stringstream& CHTTPMethods::badRequest( const std::string& response, std::stringstream& message ){
     message << "HTTP/1.1 " << response << "\r\n";
-    message << "Content-Length: " << 0 << "\r\n";
+    message << "Content-Length: 0" << "\r\n";
     message << "Connection: " << "keep-alive" << "\r\n";
     message << "\r\n";
     return message;
 }
+
+std::filesystem::path CHTTPMethods::mapAddress( const std::filesystem::path& path ){
+    CConfig conf;
+    for( auto& i : conf.data["address-mapping"] ){
+        if( path.native().find( i[0] ) == 0 ){
+            std::string newPath = path.native();
+            newPath.replace( 0, std::string( i[0] ).length(), std::string( i[1]) );
+            return {newPath};
+        }
+    }
+    return path;
+}
+
 
 bool CHTTPMethods::assemblePackets( size_t givenSize, int cliSocket, std::string& content ){
     char buffer[BUFFER_SIZE];

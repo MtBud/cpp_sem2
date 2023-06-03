@@ -8,12 +8,12 @@
   "shutdown": "/admin/shutdown",
   "password": "admin-passwd",
 
-  "address-mapping": {
-    "/admin": "/admin",
-    "/log": "/log",
-    "/scripts": "/scripts",
-    "/": "/client"
-  },
+  "address-mapping": [
+    ["/admin", "/admin"],
+    ["/log", "/log"],
+    ["/scripts", "/scripts"],
+    ["/", "/client"]
+  ],
 
   "restricted": [
     "/scripts",
@@ -25,10 +25,10 @@
   "scripts": "/scripts",
 
   "script-execution": {
-    ".c": "g++ path; path/a.out",
-    ".cpp": "g++ path; path/a.out",
-    ".sh": "path",
-    ".py": "python3 path"
+    ".c": "g++ filename; ./a.out",
+    ".cpp": "g++ filename; ./a.out",
+    ".sh": "./filename",
+    ".py": "python3 filename"
   },
 
   "file-extensions": {
@@ -45,6 +45,7 @@
   },
 
   "log": {
+    "path": "/log",
     "console": true,
     "file": false
   }

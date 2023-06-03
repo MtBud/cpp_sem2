@@ -14,9 +14,10 @@ address = '127.0.0.1'
 s.connect((address, port))
 print("successful connection")
 
-directory = "../authorization"
-filesDirectory = "../authorization/files"
+directory = "../exec_scripts"
 for file in os.listdir(directory):
+    if os.path.isdir(file):
+        continue
     requestFile = open(os.path.join(directory, file), "rb")
     requestFileContent = requestFile.read()
     s.sendall(requestFileContent)

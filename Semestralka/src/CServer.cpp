@@ -149,9 +149,9 @@ void CServer::serve(){
 }
 
 void CServer::shutdown() const{
-    if(cliSocket > 0)
-        close(cliSocket);
-    close(srvrSocket);
+    if( cliSocket > 0 )
+        close( cliSocket );
+    close( srvrSocket );
 }
 
 bool CServer::requestSyntax( const std::vector< std::string >& requestLine,
