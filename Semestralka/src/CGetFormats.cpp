@@ -14,7 +14,7 @@ CGetFormats::~CGetFormats() = default;
 std::stringstream& CDir::compose( std::filesystem::path& path, std::stringstream& message ){
     message << "Content-Type: text/plain; charset=UTF-8" << "\r\n";
     std::stringstream content;
-    CContent::list( "", path, content );
+    list( path, content );
     message << "Content-Length: " << content.str().length() << "\r\n";
     message << "\r\n";
     message << content.str();

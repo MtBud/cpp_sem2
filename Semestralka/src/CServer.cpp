@@ -107,7 +107,7 @@ void CServer::serve(){
 
             size_t requestEnd = bytes.find("\r\n\r\n");
             if( requestEnd == std::string::npos ){
-                reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));
+                reply( CHTTPMethods::badRequest( "400 Bad Request", message));
                 std::cout << "No header field terminator" << std::endl;
                 continue;
             }
@@ -130,17 +130,17 @@ void CServer::serve(){
                 headers.insert(std::pair(header[0], header[1] ) );
             }
             if( flag ){
-                reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));
+                reply( CHTTPMethods::badRequest( "400 Bad Request", message));
                 continue;
             }
 
 
             // check for bad get_requests
-            if( CServer::requestSyntax( requestLine, headers, methods ) )
+            if( CServer::requestSyntax( requestLine, methods ) )
                 continue;
 
             methods[requestLine[0]]->incoming( headers, requestLine[1], message, dataBody, cliSocket );
-            reply( cliSocket, message );
+            reply( message );
             if( headers["Connection"] == "close" ){
                 CLogger::log("Connection closed by client\n");
                 break;
@@ -157,23 +157,22 @@ void CServer::shutdown() const{
 }
 
 bool CServer::requestSyntax( const std::vector< std::string >& requestLine,
-                             const std::map< std::string, std::string >& headers,
                              const std::map< std::string, CHTTPMethods* >& methods ) const{
     std::stringstream message;
     if( requestLine.size() != 3){
-        reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));
+        reply( CHTTPMethods::badRequest( "400 Bad Request", message));
         std::cout << "Request line has a wrong number of parameters" << std::endl;
         return true;
     }
 
     if( methods.find(requestLine[0]) == methods.end()){
-        reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));
+        reply( CHTTPMethods::badRequest( "400 Bad Request", message));
         std::cout << "Bad or unsupported method" << std::endl;
         return true;
     }
 
     if( std::set< std::string > {"HTTP/2", "HTTP/3", "HTTP/1.1"}.count( requestLine[2] ) == 0 ){
-        reply( cliSocket, CHTTPMethods::badRequest( "505 HTTP Version Not Supported", message));
+        reply( CHTTPMethods::badRequest( "505 HTTP Version Not Supported", message));
         std::cout << "Unrecognized HTTP version" << std::endl;
         return true;
     }
@@ -181,7 +180,7 @@ bool CServer::requestSyntax( const std::vector< std::string >& requestLine,
     return false;
 }
 
-void CServer::reply( int cliSocket, std::stringstream& message ){
+void CServer::reply( std::stringstream& message ) const{
     size_t length = message.str().length();
     CLogger::log("SENDING");
     CLogger::log(message.str().substr(0, message.str().find("\r\n\r\n") + 4));

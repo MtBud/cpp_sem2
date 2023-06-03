@@ -5,6 +5,8 @@
   },
 
   "root": "./assets",
+  "post": "/client/uploads/",
+  "scripts": "/scripts",
   "shutdown": "/admin/shutdown",
   "password": "admin-passwd",
 
@@ -20,9 +22,6 @@
     "/admin",
     "/log"
   ],
-
-  "post": "/client/uploads/",
-  "scripts": "/scripts",
 
   "script-execution": {
     ".c": "g++ filename; ./a.out",
@@ -45,7 +44,7 @@
   },
 
   "log": {
-    "path": "/log",
+    "path": "/log/main.log",
     "console": true,
     "file": false
   }
