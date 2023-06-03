@@ -66,8 +66,8 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
     // check if the file is a script
     std::string extension = path.extension();
     try{
-        if( localPath.native().find(conf.data["script-execution"][extension]) == 0 )
-            script( path, message );
+        if( ! std::string( conf.data["script-execution"][extension] ).empty() )
+            return script( path, message );
     }
     catch( nlohmann::json_abi_v3_11_2::detail::type_error& ){}
 
@@ -96,11 +96,13 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
     return message;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 
-std::stringstream& CGet::script( const std::filesystem::path& path, std::stringstream& message ){
+std::stringstream& CGet::script( const std::filesystem::path& filePath, std::stringstream& message ){
     CConfig conf;
-    std::string extension = path.extension();
+    std::string filename = filePath.filename();
+    std::string extension = filePath.extension();
+    std::filesystem::path path = filePath.parent_path();
     std::filesystem::path startDir = std::filesystem::current_path();
     std::filesystem::current_path( path );
     std::string command;
@@ -120,7 +122,7 @@ std::stringstream& CGet::script( const std::filesystem::path& path, std::strings
     }
 
     while( command.find("filename") != std::string::npos )
-        command.replace( command.find("filename"), std::string("filename").length(), path.filename() );
+        command.replace( command.find("filename"), std::string("filename").length(), filename );
     std::system( command.c_str() );
     message << "Content-Length: " << 0 << "\r\n";
     message << "\r\n";
@@ -128,7 +130,7 @@ std::stringstream& CGet::script( const std::filesystem::path& path, std::strings
     return message;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 
 void CGet::shutdown( int cliSocket ){
     std::stringstream message;
