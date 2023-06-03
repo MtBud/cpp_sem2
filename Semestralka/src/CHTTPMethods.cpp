@@ -74,23 +74,27 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
     std::string extension = path.extension();
     if( localPath.native().find(conf.data["scripts"]) == 0 ){
         std::filesystem::path startDir = std::filesystem::current_path();
-        std::filesystem::current_path(conf.data["scripts"]);
+        std::filesystem::current_path(std::string( conf.data["root"] ) + std::string( conf.data["scripts"] ) );
         std::string command;
         try{
              command = conf.data["script-execution"][extension];
         }
         catch( nlohmann::json_abi_v3_11_2::detail::type_error& ){
             message.str("");
+            std::filesystem::current_path(startDir);
             return badRequest("415 Unsupported Media Type", message);
         }
         if( command.find("filename") == std::string::npos ){
             message.str("");
+            std::filesystem::current_path(startDir);
             return badRequest("500 Internal Server Error", message);
         }
-        command.replace( command.find("filename"), std::string("filename").length(), localPath.filename() );
+        while( command.find("filename") != std::string::npos )
+            command.replace( command.find("filename"), std::string("filename").length(), localPath.filename() );
         std::system( command.c_str() );
         message << "Content-Length: " << 0 << "\r\n";
         message << "\r\n";
+        std::filesystem::current_path(startDir);
         return message;
     }
 

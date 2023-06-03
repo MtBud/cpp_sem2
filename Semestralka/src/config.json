@@ -27,7 +27,7 @@
   "script-execution": {
     ".c": "g++ filename; ./a.out",
     ".cpp": "g++ filename; ./a.out",
-    ".sh": "./filename",
+    ".sh": "chmod +x filename; ./filename",
     ".py": "python3 filename"
   },
 

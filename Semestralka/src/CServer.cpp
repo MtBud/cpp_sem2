@@ -120,25 +120,27 @@ void CServer::serve(){
             std::vector< std::string > requestLine = parse( request[0], " ");
             std::map< std::string, std::string > headers;
             // make map of headers
+            bool flag = false;
             for( unsigned int i = 1; i < request.size(); i++){
                 std::vector< std::string > header;
                 header = parse(request[i], ": ");
                 if( header.size() == 1){
-                    reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));
-                    continue;
+                    flag = true ;
                 }
                 headers.insert(std::pair(header[0], header[1] ) );
             }
+            if( flag ){
+                reply( cliSocket, CHTTPMethods::badRequest( "400 Bad Request", message));
+                continue;
+            }
+
 
             // check for bad get_requests
             if( CServer::requestSyntax( requestLine, headers, methods ) )
                 continue;
 
             methods[requestLine[0]]->incoming( headers, requestLine[1], message, dataBody, cliSocket );
-            size_t length = message.str().length();
-            CLogger::log("SENDING");
-            CLogger::log(message.str().substr(0, message.str().find("\r\n\r\n") + 4));
-            send( cliSocket, message.str().c_str(), length, 0);
+            reply( cliSocket, message );
             if( headers["Connection"] == "close" ){
                 CLogger::log("Connection closed by client\n");
                 break;
@@ -181,5 +183,7 @@ bool CServer::requestSyntax( const std::vector< std::string >& requestLine,
 
 void CServer::reply( int cliSocket, std::stringstream& message ){
     size_t length = message.str().length();
+    CLogger::log("SENDING");
+    CLogger::log(message.str().substr(0, message.str().find("\r\n\r\n") + 4));
     send( cliSocket, message.str().c_str(), length, 0);
 }
