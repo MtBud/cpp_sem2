@@ -1,28 +1,33 @@
 #pragma once
 #include <string>
+#include <map>
 #include <vector>
 #include <ostream>
 #include <filesystem>
-#include "CHTTPMethods.h"
 
 class CGetFormats{
 public:
-    std::stringstream& composeWrapper( std::filesystem::path path, std::stringstream& message );
-private:
-    virtual std::stringstream& compose( std::filesystem::path path, std::stringstream& message ) = 0;
+    virtual std::stringstream& compose( std::filesystem::path& path, std::stringstream& message ) = 0;
+    virtual ~CGetFormats();
+    static std::stringstream& addContent( std::filesystem::path& path, std::stringstream& message );
+};
+
+class CDir : public CGetFormats{
+public:
+    std::stringstream& compose( std::filesystem::path& path, std::stringstream& message ) override;
 };
 
 class CText : public CGetFormats{
-private:
-    std::stringstream& compose( std::filesystem::path path, std::stringstream& message ) override;
+public:
+    std::stringstream& compose( std::filesystem::path& path, std::stringstream& message ) override;
 };
 
 class CImage : public CGetFormats{
-private:
-    std::stringstream& compose( std::filesystem::path path, std::stringstream& message ) override;
+public:
+    std::stringstream& compose( std::filesystem::path& path, std::stringstream& message ) override;
 };
 
 class CVideo : public CGetFormats{
-private:
-    std::stringstream& compose( std::filesystem::path path, std::stringstream& message ) override;
+public:
+    std::stringstream& compose( std::filesystem::path& path, std::stringstream& message ) override;
 };

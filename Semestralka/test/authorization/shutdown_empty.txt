@@ -1,0 +1,4 @@
+GET /admin/shutdown HTTP/1.1
+Connection: keep-alive
+Authorization:
+

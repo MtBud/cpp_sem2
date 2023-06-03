@@ -1,11 +1,4 @@
-script execution
-remote shutdown
-propper configuration integration
-
-Bonus:
-- add logging to database
-- longer logging messages
-- authentication and forbidden files and directories
-
-
-fix remote shutdown when using POST
+documentation
+scripts
+edge cases and testing
+examples

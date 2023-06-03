@@ -1,5 +1,5 @@
-all: main.o CServer.o CConfig.o CLogger.o CUtils.o CHTTPMethods.o
-	g++ -Wall -pedantic main.o CServer.o CConfig.o CLogger.o CUtils.o CHTTPMethods.o
+all: main.o CServer.o CConfig.o CLogger.o CUtils.o CHTTPMethods.o CGetFormats.o
+	g++ -Wall -pedantic main.o CServer.o CConfig.o CLogger.o CUtils.o CHTTPMethods.o CGetFormats.o
 
 clean:
 	rm -f a.out *.o
@@ -22,5 +22,5 @@ CUtils.o: src/CUtils.h src/CUtils.cpp src/CConfig.h
 CHTTPMethods.o: src/CHTTPMethods.h src/CHTTPMethods.cpp src/CUtils.h src/CConfig.h src/CLogger.h src/CGetFormats.h
 	g++ -Wall -pedantic -c src/CHTTPMethods.cpp -o CHTTPMethods.o
 
-CGetFormats.o: src/CGetFormats.h src/CGetFormats.cpp src/CHTTPMethods.h
-	g++ -Wall -pedantic -c src/CGetFormats.cpp -o CHTTPMethods.o
+CGetFormats.o: src/CGetFormats.h src/CGetFormats.cpp src/CUtils.h
+	g++ -Wall -pedantic -c src/CGetFormats.cpp -o CGetFormats.o

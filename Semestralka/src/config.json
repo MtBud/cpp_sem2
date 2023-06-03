@@ -22,17 +22,30 @@
   ],
 
   "post": "/client/uploads/",
+  "scripts": "/scripts",
 
-  "log": {
-    "console": true,
-    "file": false
-  },
-
-  "scripts": {
+  "script-execution": {
     ".c": "g++ path; path/a.out",
     ".cpp": "g++ path; path/a.out",
     ".sh": "path",
     ".py": "python3 path"
-  }
+  },
 
+  "file-extensions": {
+    ".jpg": "image",
+    ".jpeg": "image",
+    ".png": "image",
+    ".gif": "image",
+    ".txt": "text",
+    ".html": "text",
+    ".css": "text",
+    ".csv": "text",
+    ".xml": "text",
+    ".mp4": "video"
+  },
+
+  "log": {
+    "console": true,
+    "file": false
+  }
 }

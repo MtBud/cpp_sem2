@@ -1,0 +1,3 @@
+GET /client/images/mitsuri.jpeg HTTP/1.1
+Connection: keep-alive
+

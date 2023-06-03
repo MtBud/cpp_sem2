@@ -22,6 +22,11 @@
 std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers, std::filesystem::path localPath,
                                    std::stringstream& message, std::string& data, int cliSocket ){
     CConfig conf;
+
+    if( localPath == "/" ){
+        localPath = std::string( conf.data["address-mapping"]["/"] );
+    }
+
     for( auto& i : conf.data["restricted"]){
         if( localPath.native().find(i) == 0){
             // check if correct password has been provided
@@ -52,8 +57,7 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
     }
 
 
-    // write 200 OK at the beginning and choose which content type header to use
-    std::string content;
+    // write 200 OK and shared headers at the beginning
     message << "HTTP/1.1 " << 200 << " OK" << "\r\n";
     if(headers["Connection"] == "close")
         message << "Connection: " << "close" << "\r\n";
@@ -61,45 +65,31 @@ std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers
         message << "Connection: " << "keep-alive" << "\r\n";
 
     if( std::filesystem::is_directory(path) ){
-        message << "Content-Type: text/plain; charset=UTF-8" << "\r\n";
-        std::stringstream tmp;
-        CContent::list( "", path, tmp );
-        content = tmp.str();
+        CDir makeDir;
+        return makeDir.compose( path, message );
     }
 
-    std::string extension( path.extension() );
-    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower );
-    if( extension == ".jpg" )
-        extension = ".jpeg";
-    if( extension == ".jpeg" || extension == ".png" ){
-        message << "Content-Type: image/" << extension.substr(1) << "\r\n";
-        std::ifstream ifs(path, std::ios::binary );
-        content = std::string( (std::istreambuf_iterator<char>(ifs) ),
-                               (std::istreambuf_iterator<char>() ) );
+    std::string extension = path.extension();
+    std::string type;
+    try{
+        type = conf.data["file-extensions"][extension];
     }
-
-    if( extension == ".html" || extension == ".txt" ){
-        if( extension == ".html" )
-            message << "Content-Type: text/" << extension.substr(1) << "; charset=UTF-8" << "\r\n";
-        else
-            message << "Content-Type: text/plain; charset=UTF-8" << "\r\n";
-        std::ifstream ifs(path);
-        content = std::string( (std::istreambuf_iterator<char>(ifs) ),
-                               (std::istreambuf_iterator<char>() ) );
-    }
-
-
-    // if none of the options were executed, flush the message stream and reply with error instead
-    if( content.empty() ){
+    catch( nlohmann::json_abi_v3_11_2::detail::type_error& ){
         message.str("");
-        badRequest( "415 Unsupported Media Type", message);
-    }
-    else{
-        message << "Content-Length: " << content.length() << "\r\n";
-        message << "\r\n";
-        message << content;
+        return badRequest("415 Unsupported Media Type", message);
     }
 
+
+    CGetFormats* image = new( CImage );
+    CGetFormats* text = new( CText );
+    CGetFormats* video = new( CVideo );
+    std::map <std::string, CGetFormats* > formats = {{"image", image },
+                                                     {"text", text },
+                                                     {"video", video}};
+    formats[type]->compose( path, message );
+    delete image;
+    delete text;
+    delete video;
     return message;
 }
 

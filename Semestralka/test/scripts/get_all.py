@@ -1,5 +1,6 @@
 import socket
 import os
+import re
 
 try:
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,26 +17,27 @@ print("successful connection")
 
 directory = "../get_requests"
 filesDirectory = "../get_files"
+headerTerminator = b'\x0d\x0a\x0d\x0a'
 for file in os.listdir(directory):
     requestFile = open(os.path.join(directory, file), "rb")
     requestFileContent = requestFile.read()
     s.sendall(requestFileContent)
     size = 1
-    request = ""
+    request = bytearray()
     content = bytearray()
     while size == 1:
-        newData = s.recv(1).decode()
+        newData = s.recv(1)
         request += newData
         size = len(newData)
-        if request.find("\r\n\r\n") != -1:
+        if headerTerminator in request:
             print("HEADERS")
-            print(request)
-            content += bytes(request[request.find("\r\n\r\n")+4:], "utf-8")
-            size = 1024
-            while size == 1024:
-                newData = s.recv(1024)
-                content += newData
-                size = len(newData)
+            print(request.decode())
+            contentLength = int(re.search(r'\d+', request.decode()[request.decode().index("Content-Length: ") + len("Content-Length: "):]).group())
+            content += request[request.index(headerTerminator) + 4:]
+            while contentLength != len(content):
+                content += s.recv(8196)
+            break
+
     extension = file[file.rfind("_")+1:file.find(".")]
     if extension == "dir":
         extension = "dir.txt"

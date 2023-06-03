@@ -83,7 +83,7 @@ void CServer::serve(){
             close(srvrSocket);
             throw std::runtime_error("Connection couln't be made");
         }
-        CLogger::log("Connection made");
+        CLogger::log("Connection made\n");
 
         // recieve data from connection
         char buffer[BUFFER_SIZE];
@@ -97,7 +97,7 @@ void CServer::serve(){
                     break;
             }
             if( bytesRead == 0){
-                CLogger::log("Connection ended abruptly");
+                CLogger::log("Connection ended abruptly\n");
                 break;
             }
 
@@ -137,10 +137,10 @@ void CServer::serve(){
             methods[requestLine[0]]->incoming( headers, requestLine[1], message, dataBody, cliSocket );
             size_t length = message.str().length();
             CLogger::log("SENDING");
-            CLogger::log(message.str());
+            CLogger::log(message.str().substr(0, message.str().find("\r\n\r\n") + 4));
             send( cliSocket, message.str().c_str(), length, 0);
             if( headers["Connection"] == "close" ){
-                CLogger::log("Connection closed by client");
+                CLogger::log("Connection closed by client\n");
                 break;
             }
         }
