@@ -5,7 +5,7 @@
 
 class CHTTPMethods{
 public:
-    ~CHTTPMethods();
+    virtual ~CHTTPMethods();
 
     virtual std::stringstream& incoming( std::map< std::string, std::string >& headers, std::filesystem::path path,
                                          std::stringstream& message,  std::string& content, int cliSocket ) = 0;
