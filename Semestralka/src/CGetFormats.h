@@ -8,7 +8,9 @@
 class CGetFormats{
 public:
     virtual std::stringstream& compose( std::filesystem::path& path, std::stringstream& message ) = 0;
+
     virtual ~CGetFormats();
+
     static std::stringstream& addContent( std::filesystem::path& path, std::stringstream& message );
 };
 

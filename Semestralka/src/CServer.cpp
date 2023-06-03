@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 
 #include "CHTTPMethods.h"
+#include "CGet.h"
 #include "CServer.h"
 #include "CConfig.h"
 #include "CLogger.h"

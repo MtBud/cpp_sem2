@@ -6,7 +6,6 @@
 
   "root": "./assets",
   "post": "/client/uploads/",
-  "scripts": "/scripts",
   "shutdown": "/admin/shutdown",
   "password": "admin-passwd",
 
@@ -14,6 +13,7 @@
     ["/admin", "/admin"],
     ["/log", "/log"],
     ["/scripts", "/scripts"],
+    ["/client", "/client"],
     ["/", "/client"]
   ],
 

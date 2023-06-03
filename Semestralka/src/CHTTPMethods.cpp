@@ -13,113 +13,15 @@
 #include <climits>
 #include <sys/socket.h>
 #include <filesystem>
+
 #include "CConfig.h"
 #include "CHTTPMethods.h"
 #include "CUtils.h"
 #include "CLogger.h"
-#include "CGetFormats.h"
 
 #define BUFFER_SIZE 8196
 
-std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers, std::filesystem::path localPath,
-                                   std::stringstream& message, std::string& data, int cliSocket ){
-    CConfig conf;
-    localPath = mapAddress( localPath );
-
-    for( auto& i : conf.data["restricted"]){
-        if( localPath.native().find(i) == 0){
-            // check if correct password has been provided
-            if( headers["Authorization"] != std::string("Basic ").append(conf.data["password"]) ){
-                return badRequest( "401 Unauthorized", message);
-            }
-        }
-    }
-
-    if( localPath == std::string( conf.data["shutdown"] ) ){
-        message << "HTTP/1.1 200 OK\r\n";
-        message << "Content-Length: " << 0 << "\r\n";
-        message << "Connection: " << "close" << "\r\n";
-        message << "\r\n";
-        size_t length = message.str().length();
-        CLogger::log("SENDING");
-        CLogger::log(message.str().substr(0, message.str().find("\r\n\r\n") + 4));
-        send( cliSocket, message.str().c_str(), length, 0);
-        throw std::string("shutdwon");
-    }
-
-    std::string rootDir = conf.data["root"];
-    std::filesystem::path path = rootDir;
-    path += localPath;
-
-    // 404 path doesn't exist
-    if( ! std::filesystem::exists(path) ){
-        badRequest( "404 Not Found", message );
-        CLogger::log( "Unexisting path: " + path.native() );
-        return message;
-    }
-
-
-    // write 200 OK and shared headers at the beginning
-    message << "HTTP/1.1 200 OK" << "\r\n";
-    if(headers["Connection"] == "close")
-        message << "Connection: " << "close" << "\r\n";
-    else
-        message << "Connection: " << "keep-alive" << "\r\n";
-
-    if( std::filesystem::is_directory(path) ){
-        CDir makeDir;
-        return makeDir.compose( path, message );
-    }
-
-    std::string extension = path.extension();
-    if( localPath.native().find(conf.data["scripts"]) == 0 ){
-        std::filesystem::path startDir = std::filesystem::current_path();
-        std::filesystem::current_path(std::string( conf.data["root"] ) + std::string( conf.data["scripts"] ) );
-        std::string command;
-        try{
-             command = conf.data["script-execution"][extension];
-        }
-        catch( nlohmann::json_abi_v3_11_2::detail::type_error& ){
-            message.str("");
-            std::filesystem::current_path(startDir);
-            return badRequest("415 Unsupported Media Type", message);
-        }
-        if( command.find("filename") == std::string::npos ){
-            message.str("");
-            std::filesystem::current_path(startDir);
-            return badRequest("500 Internal Server Error", message);
-        }
-        while( command.find("filename") != std::string::npos )
-            command.replace( command.find("filename"), std::string("filename").length(), localPath.filename() );
-        std::system( command.c_str() );
-        message << "Content-Length: " << 0 << "\r\n";
-        message << "\r\n";
-        std::filesystem::current_path(startDir);
-        return message;
-    }
-
-    std::string type;
-    try{
-        type = conf.data["file-extensions"][extension];
-    }
-    catch( nlohmann::json_abi_v3_11_2::detail::type_error& ){
-        message.str("");
-        return badRequest("415 Unsupported Media Type", message);
-    }
-
-
-    CGetFormats* image = new( CImage );
-    CGetFormats* text = new( CText );
-    CGetFormats* video = new( CVideo );
-    std::map <std::string, CGetFormats* > formats = {{"image", image },
-                                                     {"text", text },
-                                                     {"video", video}};
-    formats[type]->compose( path, message );
-    delete image;
-    delete text;
-    delete video;
-    return message;
-}
+CHTTPMethods::~CHTTPMethods() = default;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -210,10 +112,12 @@ std::stringstream& CHTTPMethods::badRequest( const std::string& response, std::s
 
 std::filesystem::path CHTTPMethods::mapAddress( const std::filesystem::path& path ){
     CConfig conf;
+    std::cout << "old address: " << path << std::endl;
     for( auto& i : conf.data["address-mapping"] ){
         if( path.native().find( i[0] ) == 0 ){
             std::string newPath = path.native();
             newPath.replace( 0, std::string( i[0] ).length(), std::string( i[1]) );
+            std::cout << "mapped address: " << newPath << std::endl;
             return {newPath};
         }
     }

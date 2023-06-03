@@ -29,7 +29,6 @@ void CConfig::checkCorrectness(){
     std::filesystem::path tmpPath1 = data["root"];
     std::vector < std::filesystem::path > pathVector;
     pathVector.push_back( data["post"] );
-    pathVector.push_back( data["scripts"] );
     pathVector.push_back( data["shutdown"] );
     pathVector.push_back( data["password"] );
 
@@ -41,7 +40,6 @@ void CConfig::checkCorrectness(){
         pathVector.push_back( i[1] );
         while( tmpPath.native().length() != 1 ) {
             currDepth++;
-            std::cout << "loop" << std::endl;
             tmpPath = tmpPath.parent_path();
         }
         bool flag = false;
