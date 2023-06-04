@@ -95,7 +95,6 @@ std::filesystem::path CPost::makeName( const std::filesystem::path& localPath ){
     return newName;
 }
 
-
 //----------------------------------------------------------------------------------------------------------------------
 
 bool CPost::checkHeaders( std::stringstream& message ){

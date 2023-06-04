@@ -1,3 +1,0 @@
-GET /client/text/sample.css HTTP/1.1
-Connection: keep-alive
-

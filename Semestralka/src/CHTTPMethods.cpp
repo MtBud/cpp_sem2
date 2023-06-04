@@ -34,7 +34,7 @@ std::filesystem::path CHTTPMethods::mapAddress( const std::filesystem::path& pat
     for( auto& i : conf.data["address-mapping"] ){
         if( path.native().find( i[0] ) == 0 ){
             std::string newPath = path.native();
-            newPath.replace( 0, std::string( i[0] ).length(), std::string( i[1]) );
+            newPath.replace( 0, std::string( i[0] ).length(), std::string( i[1]) + "/" );
             return {newPath};
         }
     }

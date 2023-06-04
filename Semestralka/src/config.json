@@ -4,7 +4,7 @@
     "address": "127.0.0.1"
   },
 
-  "root": "./assets",
+  "root": "./examples/server_filesystem",
   "post": "/client/uploads/",
   "shutdown": "/admin/shutdown",
   "password": "admin-passwd",

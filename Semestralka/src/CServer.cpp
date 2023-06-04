@@ -7,6 +7,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <unistd.h>
+#include <cstdio>
 
 #include "CHTTPMethods.h"
 #include "CPost.h"
