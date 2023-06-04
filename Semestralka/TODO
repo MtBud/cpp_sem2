@@ -1,5 +1,4 @@
 documentation
 edge cases, testing and cleanup
 edit CUtils
-fix segfault when authenticating as a second client
 examples

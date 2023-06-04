@@ -1,0 +1,4 @@
+GET /scripts/script.py HTTP/1.1
+Connection: keep-alive
+Authorization: Basic admin-passwd
+

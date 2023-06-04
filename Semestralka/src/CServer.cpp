@@ -14,7 +14,7 @@
 #include "CServer.h"
 #include "CConfig.h"
 #include "CLogger.h"
-#include "CUtils.h"
+#include "util.h"
 
 #define BUFFER_SIZE 8196
 
@@ -148,24 +148,6 @@ void CServer::shutdown() const{
     delete post;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-
-std::vector<std::string> CServer::parse( std::string data, const std::string& delimiter ){
-    std::vector<std::string> parsed;
-    size_t delimSize = delimiter.size();
-    while(true){
-        size_t pos = data.find(delimiter);
-        if(pos == std::string::npos){
-            if( ! data.empty() )
-                parsed.push_back(data);
-            break;
-        }
-        parsed.push_back(data.substr(0,pos));
-        data.erase(0,pos + delimSize);
-    }
-
-    return parsed;
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 

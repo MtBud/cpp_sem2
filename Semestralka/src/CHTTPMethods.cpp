@@ -16,7 +16,7 @@
 
 #include "CConfig.h"
 #include "CHTTPMethods.h"
-#include "CUtils.h"
+#include "util.h"
 #include "CLogger.h"
 
 CHTTPMethods::~CHTTPMethods() = default;

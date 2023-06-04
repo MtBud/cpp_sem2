@@ -15,14 +15,14 @@
 #include <filesystem>
 
 #include "CConfig.h"
-#include "CUtils.h"
+#include "util.h"
 #include "CLogger.h"
 #include "CGetFormats.h"
 #include "CGet.h"
 
-std::stringstream& CGet::incoming( std::map< std::string, std::string >& headers, std::filesystem::path localPath,
+std::stringstream& CGet::incoming( const std::map< std::string, std::string >& headerMap, std::filesystem::path localPath,
                                    std::stringstream& message, std::string& data, int cliSocket ){
-    CConfig conf;
+    headers = headerMap;
     localPath = mapAddress( localPath );
 
     // check if folder is restricted
@@ -115,14 +115,14 @@ std::stringstream& CGet::script( const std::filesystem::path& filePath, std::str
         return CGet::badRequest("415 Unsupported Media Type", message);
     }
 
-    if( command.find("filename") == std::string::npos ){
+    if( command.find("$filename") == std::string::npos ){
         message.str("");
         std::filesystem::current_path(startDir);
         return CGet::badRequest("500 Internal Server Error", message);
     }
 
-    while( command.find("filename") != std::string::npos )
-        command.replace( command.find("filename"), std::string("filename").length(), filename );
+    while( command.find("$filename") != std::string::npos )
+        command.replace( command.find("$filename"), std::string("$filename").length(), filename );
     std::system( command.c_str() );
     message << "Content-Length: " << 0 << "\r\n";
     message << "\r\n";

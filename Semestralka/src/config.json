@@ -9,6 +9,13 @@
   "shutdown": "/admin/shutdown",
   "password": "admin-passwd",
 
+
+  "log": {
+    "path": "/log/main.log",
+    "console": true,
+    "file": false
+  },
+
   "address-mapping": [
     ["/admin", "/admin"],
     ["/log", "/log"],
@@ -24,10 +31,10 @@
   ],
 
   "script-execution": {
-    ".c": "g++ filename; ./a.out",
-    ".cpp": "g++ filename; ./a.out",
-    ".sh": "chmod +x filename; ./filename",
-    ".py": "python3 filename"
+    ".c": "g++ $filename; ./a.out",
+    ".cpp": "g++ $filename; ./a.out",
+    ".sh": "chmod +x $filename; ./$filename",
+    ".py": "python3 $filename"
   },
 
   "file-extensions": {
@@ -41,11 +48,5 @@
     ".csv": "text",
     ".xml": "text",
     ".mp4": "video"
-  },
-
-  "log": {
-    "path": "/log/main.log",
-    "console": true,
-    "file": false
   }
 }

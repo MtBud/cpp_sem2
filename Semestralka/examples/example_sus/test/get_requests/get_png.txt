@@ -1,0 +1,3 @@
+GET /client/images/jeramiasz.png HTTP/1.1
+Connection: keep-alive
+

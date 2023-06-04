@@ -10,13 +10,12 @@
 #include "CConfig.h"
 #include "../libs/json.hpp"
 
-
 CConfig::CConfig(){
-    std::filesystem::path path = "src/config.json";
+    std::filesystem::path path = CONFIG_PATH;
     if( ! exists(path) ){
         throw std::runtime_error("Config file doesn't exist");
     }
-    std::ifstream f("src/config.json");
+    std::ifstream f( CONFIG_PATH );
     data = nlohmann::json::parse(f);
 }
 

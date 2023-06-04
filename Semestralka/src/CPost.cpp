@@ -16,23 +16,20 @@
 
 #include "CPost.h"
 #include "CConfig.h"
-#include "CUtils.h"
+#include "util.h"
 #include "CLogger.h"
 
 #define BUFFER_SIZE 8196
 
-std::stringstream& CPost::incoming( std::map< std::string, std::string >& headers, std::filesystem::path localPath,
+std::stringstream& CPost::incoming( const std::map< std::string, std::string >& headerMap, std::filesystem::path localPath,
                                     std::stringstream& message, std::string& content, int cliSocket ){
-    CConfig conf;
+    headers = headerMap;
     localPath = mapAddress( localPath );
 
-    // check if the path is available to normal users
-    std::filesystem::path basePath = conf.data["post"];
-    auto rel = std::filesystem::relative(localPath, basePath);
-    if(basePath != localPath && rel.native()[0] != '.'){
-        if( headers["Authorization"] != std::string("Basic ").append(conf.data["authentication"]["password"]) ){
-            return badRequest( "401 Unauthorized", message);
-        }
+    // authenticate user, otherwise use default path
+    if( localPath.native() != conf.data["post"]){
+        if( headers["Authorization"] != std::string("Basic ").append(conf.data["password"]) )
+            localPath.assign( conf.data["post"] );
     }
 
     // check if directory exists
@@ -44,7 +41,7 @@ std::stringstream& CPost::incoming( std::map< std::string, std::string >& header
 
     // check headers
     size_t messageLen = message.str().length();
-    if( checkHeaders( headers, message ).str().length() != messageLen )
+    if( checkHeaders( message ).str().length() != messageLen )
         return message;
 
     // assemble all available packets, timeout after one second
@@ -61,14 +58,7 @@ std::stringstream& CPost::incoming( std::map< std::string, std::string >& header
     }
 
     // generate a new file name based on the time it was recieved
-    std::string fileExt = headers["Content-Type"];
-    fileExt = fileExt.substr(fileExt.find('/') + 1);
-    std::filesystem::path newName;
-    do{
-        std::stringstream currTime;
-        currTime << std::time( nullptr );
-        newName = ( std::string( conf.data["root"] ) + localPath.native() + '/' + currTime.str() + '.' + fileExt );
-    }while( std::filesystem::exists(newName) );
+    std::filesystem::path newName = makeName( localPath );
 
     std::ofstream outFile( newName, std::ios::binary );
     if( ! outFile ){
@@ -90,8 +80,26 @@ std::stringstream& CPost::incoming( std::map< std::string, std::string >& header
 
 //----------------------------------------------------------------------------------------------------------------------
 
-std::stringstream& CPost::checkHeaders( std::map< std::string, std::string >& headers, std::stringstream& message ){
-    CConfig conf;
+std::filesystem::path CPost::makeName( const std::filesystem::path& localPath ){
+    std::string fileExt = headers["Content-Type"];
+    fileExt = fileExt.substr(fileExt.find('/') + 1);
+    std::filesystem::path newName;
+    std::stringstream currTime;
+    currTime << std::time( nullptr );
+    newName = ( std::string( conf.data["root"] ) + localPath.native() + '/' + currTime.str() + '.' + fileExt );
+    while( std::filesystem::exists(newName) ){
+        std::string filename = newName.filename().native();
+        filename = filename.substr(0, filename.length() - newName.extension().native().length() );
+        filename = std::to_string( std::stoi( filename ) + 1 );
+        newName.replace_filename( filename + fileExt );
+    }
+    return newName;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+
+std::stringstream& CPost::checkHeaders( std::stringstream& message ){
     if( headers.find("Content-Length") == headers.end() ){
         CLogger::log("Missing content length");
         return badRequest("411 Length Required", message);
