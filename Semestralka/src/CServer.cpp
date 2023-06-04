@@ -176,9 +176,11 @@ std::map< std::string, std::string > CServer::parseHeaders( const std::vector< s
         header = parse(request[i], ": ");
         if( header.size() == 1){
             flag = true ;
+            continue;
         }
         headers.insert(std::pair(header[0], header[1] ) );
     }
+
     return headers;
 }
 

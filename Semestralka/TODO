@@ -1,4 +1,5 @@
 documentation
 edge cases, testing and cleanup
-edit CUtils and CServer server method
+edit CUtils
+fix segfault when authenticating as a second client
 examples
