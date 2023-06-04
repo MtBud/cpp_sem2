@@ -55,6 +55,8 @@ std::stringstream& CVideo::compose( std::filesystem::path& path, std::stringstre
     return addContent( path, message );
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+
 std::stringstream& CGetFormats::addContent( std::filesystem::path& path, std::stringstream& message ){
     std::ifstream ifs(path);
     std::string content = std::string( (std::istreambuf_iterator<char>(ifs) ),

@@ -166,7 +166,6 @@ std::map< std::string, std::string > CServer::parseHeaders( const std::vector< s
     return headers;
 }
 
-
 //----------------------------------------------------------------------------------------------------------------------
 
 bool CServer::requestSyntax( const std::vector< std::string >& requestLine,
@@ -174,19 +173,19 @@ bool CServer::requestSyntax( const std::vector< std::string >& requestLine,
     std::stringstream message;
     if( requestLine.size() != 3){
         reply( CHTTPMethods::badRequest( "400 Bad Request", message));
-        std::cout << "Request line has a wrong number of parameters" << std::endl;
+        CLogger::log( "Request line has a wrong number of parameters");
         return true;
     }
 
     if( methods.find(requestLine[0]) == methods.end()){
         reply( CHTTPMethods::badRequest( "400 Bad Request", message));
-        std::cout << "Bad or unsupported method" << std::endl;
+        CLogger::log( "Bad or unsupported method" );
         return true;
     }
 
     if( std::set< std::string > {"HTTP/2", "HTTP/3", "HTTP/1.1"}.count( requestLine[2] ) == 0 ){
         reply( CHTTPMethods::badRequest( "505 HTTP Version Not Supported", message));
-        std::cout << "Unrecognized HTTP version" << std::endl;
+        CLogger::log( "Unrecognized HTTP version" );
         return true;
     }
 
