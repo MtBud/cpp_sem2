@@ -8,6 +8,7 @@
 
 std::stringstream& list( std::filesystem::path directory, std::stringstream & out ){
     CConfig conf;
+    size_t length = out.str().length();
     directory = std::string(conf.data["root"]) + directory.native();
     if( ! std::filesystem::exists(directory) ){
         return out;
@@ -17,6 +18,10 @@ std::stringstream& list( std::filesystem::path directory, std::stringstream & ou
         std::string currdir = entry.path();
         out << currdir.substr(currdir.find_last_of('/') + 1) << std::endl;
     }
+
+    if( length == out.str().length())
+        out << "Directory is empty" << std::endl;
+
     return out;
 }
 
