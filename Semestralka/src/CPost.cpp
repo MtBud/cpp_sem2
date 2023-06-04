@@ -40,8 +40,7 @@ std::stringstream& CPost::incoming( const std::map< std::string, std::string >& 
     }
 
     // check headers
-    size_t messageLen = message.str().length();
-    if( checkHeaders( message ).str().length() != messageLen )
+    if( checkHeaders( message ) )
         return message;
 
     // assemble all available packets, timeout after one second
@@ -99,28 +98,32 @@ std::filesystem::path CPost::makeName( const std::filesystem::path& localPath ){
 
 //----------------------------------------------------------------------------------------------------------------------
 
-std::stringstream& CPost::checkHeaders( std::stringstream& message ){
+bool CPost::checkHeaders( std::stringstream& message ){
     if( headers.find("Content-Length") == headers.end() ){
         CLogger::log("Missing content length");
-        return badRequest("411 Length Required", message);
+        badRequest("411 Length Required", message);
+        return true;
     }
 
     if( stoi( headers[ "Content-Length" ] ) < 0 ){
         CLogger::log("Missing content length");
-        return badRequest("411 Length Required", message);
+        badRequest("411 Length Required", message);
+        return true;
     }
 
     if( headers.find("Content-Type") == headers.end() ){
         CLogger::log("Missing content type");
-        return badRequest("400 Bad Request", message);
+        badRequest("400 Bad Request", message);
+        return true;
     }
 
     if( headers["Content-Type"].find('/') == std::string::npos ){
         CLogger::log("Bad content type format");
-        return badRequest("400 Bad Request", message);
+        badRequest("400 Bad Request", message);
+        return true;
     }
 
-    return message;
+    return false;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
